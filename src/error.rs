@@ -17,5 +17,5 @@ pub enum RudocxError {
     #[error("Content structure mismatch: {0}")]
     LoadContentMismatch(String),
     #[error("Feature not supported: {0}")]
-    Unsupported(String)
+    Unsupported(String),
 }
