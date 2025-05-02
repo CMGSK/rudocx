@@ -1,0 +1,10 @@
+[package]
+name = "rudocx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zip = { version = "2.6", features = ["deflate"]}
+quick-xml = {version = "0.37", features = ["serialize", "async-tokio", "encoding"]}
+thiserror = "2.0"
+uuid = { version = "1.16", features = ["v4"]}
