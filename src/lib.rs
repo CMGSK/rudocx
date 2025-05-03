@@ -1,4 +1,7 @@
 mod error;
+mod rels;
+mod properties;
+
 use error::RudocxError;
 use quick_xml::Reader;
 use quick_xml::Writer;
@@ -8,12 +11,28 @@ use std::io::{BufReader, Cursor, Read, Write};
 use std::path::Path;
 use zip::ZipArchive;
 use zip::write::{FileOptions, ZipWriter};
+use crate::properties::{FontSet, HLColor, Underline};
+use crate::rels::bp;
 
+/// Representation of the format applied to a text `Run` in a docx document.
+/// ### Fields
+/// > - **bold:** `bool` - Indicates if a text is bold [`w:b`]
+/// > - **italic:** `bool` - Indicates if a text is italic [`w:i`]
+/// > - **underline:** `Option<Underline>` - Indicates the `Underline` of a text [`w:b`]. `None` is unused.
+/// > - **color:** `Option<HexColor>` - Indicates the `HexColor` of a text font. `None` defaults to `#FFFFFF`. Note that XML tag value does **not** prepend the `#` [`w:color w:val="<HEX_VAL>"`]()
+/// > - **size:** `Option<u32>` - Indicates the font size of a text in half points (e.g. `21` == `10.5 pt.`). `None` defaults to 22 (11pt). [`w:sz w:val="<NUM>"`]()
+/// > - **font:** `Option<FontSet>` - Indicates the `FontSet` of a text. For `None` and other details, please refere to: [FontSet](crate::properties::FontSet) [`w:rFonts[...]`]()
+/// > - **highlight:** `Option<HLColor>` - Indicates the highlighting `HLColor` of a text. `None` is unused. Only predefined colors are accepted. For custom coloring, `Shading` is used instead. [`w:highlight w:val="<COLOR>"`]()
+/// 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct RunProperties {
-    pub is_bold: bool,
-    pub is_italic: bool,
-    pub font_color: Option<String>,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: Option<Underline>,
+    pub color: Option<String>,
+    pub size: Option<u32>,
+    pub font: Option<FontSet>,
+    pub highlight: Option<HLColor>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,29 +53,10 @@ pub struct Document {
 
 impl RunProperties {
     pub fn has_formatting(&self) -> bool {
-        self.is_bold || self.is_italic || self.font_color.is_some()
+        self.bold || self.italic || self.color.is_some()
     }
 }
 
-const DOCUMENT_XML_PATH: &str = "word/document.xml";
-
-// Boilerplate XML content
-const RELS_XML_CONTENT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>"#;
-
-const CONTENT_TYPES_XML_CONTENT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-    <Default Extension="xml" ContentType="application/xml"/>
-    <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>"#;
-
-// Minimal document rels - can be expanded later if images, hyperlinks etc. are added
-const DOC_RELS_XML_CONTENT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>"#;
 
 pub fn load<P: AsRef<Path>>(path: P) -> Result<Document, RudocxError> {
     let file = File::open(path.as_ref()).map_err(RudocxError::IoError)?;
@@ -64,8 +64,8 @@ pub fn load<P: AsRef<Path>>(path: P) -> Result<Document, RudocxError> {
     let mut archive = ZipArchive::new(reader).map_err(RudocxError::ZipError)?;
 
     let mut document_file = archive
-        .by_name(DOCUMENT_XML_PATH)
-        .map_err(|_| RudocxError::MissingPart(DOCUMENT_XML_PATH.to_string()))?;
+        .by_name(bp::DOCUMENT_XML_PATH)
+        .map_err(|_| RudocxError::MissingPart(bp::DOCUMENT_XML_PATH.to_string()))?;
 
     let mut xml_content = String::new();
     document_file
@@ -116,14 +116,14 @@ fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                 b"w:b" => {
                     if is_in_run_properties {
                         if let Some(ref mut props) = current_run_properties {
-                            props.is_bold = true;
+                            props.bold = true;
                         }
                     }
                 }
                 b"w:i" => {
                     if is_in_run_properties {
                         if let Some(ref mut props) = current_run_properties {
-                            props.is_italic = true;
+                            props.italic = true;
                         }
                     }
                 }
@@ -136,7 +136,7 @@ fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                                         if let Ok(val) =
                                             attr.decode_and_unescape_value(reader.decoder())
                                         {
-                                            props.font_color = Some(val.into_owned());
+                                            props.color = Some(val.into_owned());
                                             break;
                                         }
                                     }
@@ -226,13 +226,13 @@ fn generate_document_xml(document: &Document) -> Result<String, RudocxError> {
                                     if r.properties.has_formatting() {
                                         writer.create_element("w:rPr").write_inner_content(
                                             |writer| {
-                                                if r.properties.is_bold {
+                                                if r.properties.bold {
                                                     writer.create_element("w:b").write_empty()?;
                                                 }
-                                                if r.properties.is_italic {
+                                                if r.properties.italic {
                                                     writer.create_element("w:i").write_empty()?;
                                                 }
-                                                if let Some(color) = &r.properties.font_color {
+                                                if let Some(color) = &r.properties.color {
                                                     writer
                                                         .create_element("w:color")
                                                         .with_attribute(("w:val", color.as_str()))
@@ -267,18 +267,18 @@ pub fn save<P: AsRef<Path>>(document: &Document, path: P) -> Result<(), RudocxEr
 
     // Write boilerplate files
     zip.start_file("_rels/.rels", options)?;
-    zip.write_all(RELS_XML_CONTENT.as_bytes())?;
+    zip.write_all(bp::RELS_XML_CONTENT.as_bytes())?;
 
     zip.start_file("[Content_Types].xml", options)?;
-    zip.write_all(CONTENT_TYPES_XML_CONTENT.as_bytes())?;
+    zip.write_all(bp::CONTENT_TYPES_XML_CONTENT.as_bytes())?;
 
     // Ensure word/_rels directory exists implicitly via path
     zip.start_file("word/_rels/document.xml.rels", options)?;
-    zip.write_all(DOC_RELS_XML_CONTENT.as_bytes())?;
+    zip.write_all(bp::DOC_RELS_XML_CONTENT.as_bytes())?;
 
     // Generate and write word/document.xml
     let document_xml = generate_document_xml(document)?;
-    zip.start_file(DOCUMENT_XML_PATH, options)?;
+    zip.start_file(bp::DOCUMENT_XML_PATH, options)?;
     zip.write_all(document_xml.as_bytes())?;
 
     zip.finish().map_err(RudocxError::ZipError)?;
@@ -319,29 +319,29 @@ mod tests {
         // Paragraph 1: Plain text
         assert_eq!(doc.paragraphs[0].runs.len(), 1);
         assert_eq!(doc.paragraphs[0].runs[0].text, "This is plain text.");
-        assert!(!doc.paragraphs[0].runs[0].properties.is_bold);
-        assert!(!doc.paragraphs[0].runs[0].properties.is_italic);
+        assert!(!doc.paragraphs[0].runs[0].properties.bold);
+        assert!(!doc.paragraphs[0].runs[0].properties.italic);
 
         // Paragraph 2: Bold, space, Italic
         assert_eq!(doc.paragraphs[1].runs.len(), 3);
         // Run 1: Bold
         assert_eq!(doc.paragraphs[1].runs[0].text, "This is bold.");
-        assert!(doc.paragraphs[1].runs[0].properties.is_bold);
-        assert!(!doc.paragraphs[1].runs[0].properties.is_italic);
+        assert!(doc.paragraphs[1].runs[0].properties.bold);
+        assert!(!doc.paragraphs[1].runs[0].properties.italic);
         // Run 2: Space (should be preserved)
         assert_eq!(doc.paragraphs[1].runs[1].text, " ");
-        assert!(!doc.paragraphs[1].runs[1].properties.is_bold);
-        assert!(!doc.paragraphs[1].runs[1].properties.is_italic);
+        assert!(!doc.paragraphs[1].runs[1].properties.bold);
+        assert!(!doc.paragraphs[1].runs[1].properties.italic);
         // Run 3: Italic
         assert_eq!(doc.paragraphs[1].runs[2].text, "This is italic.");
-        assert!(!doc.paragraphs[1].runs[2].properties.is_bold);
-        assert!(doc.paragraphs[1].runs[2].properties.is_italic);
+        assert!(!doc.paragraphs[1].runs[2].properties.bold);
+        assert!(doc.paragraphs[1].runs[2].properties.italic);
 
         // Paragraph 3: Bold and Italic
         assert_eq!(doc.paragraphs[2].runs.len(), 1);
         assert_eq!(doc.paragraphs[2].runs[0].text, "Bold and Italic.");
-        assert!(doc.paragraphs[2].runs[0].properties.is_bold);
-        assert!(doc.paragraphs[2].runs[0].properties.is_italic);
+        assert!(doc.paragraphs[2].runs[0].properties.bold);
+        assert!(doc.paragraphs[2].runs[0].properties.italic);
     }
 
     #[test]
@@ -356,17 +356,25 @@ mod tests {
                         },
                         Run {
                             properties: RunProperties {
-                                is_bold: true,
-                                is_italic: false,
-                                font_color: None,
+                                bold: true,
+                                italic: false,
+                                underline: None,
+                                color: None,
+                                size: None,
+                                font: None,
+                                highlight: None,
                             },
                             text: "World".to_string(),
                         },
                         Run {
                             properties: RunProperties {
-                                is_bold: false,
-                                is_italic: false,
-                                font_color: Some("FF0000".to_string()), // Red
+                                bold: false,
+                                italic: false,
+                                underline: None,
+                                color: Some("FF0000".to_string()), // Red
+                                size: None,
+                                font: None,
+                                highlight: None,
                             },
                             text: " Red!".to_string(),
                         },
@@ -375,9 +383,13 @@ mod tests {
                 Paragraph {
                     runs: vec![Run {
                         properties: RunProperties {
-                            is_bold: false,
-                            is_italic: true,
-                            font_color: None,
+                            bold: false,
+                            italic: true,
+                            underline: None,
+                            color: None,
+                            size: None,
+                            font: None,
+                            highlight: None,
                         },
                         text: "This is italic.".to_string(),
                     }],

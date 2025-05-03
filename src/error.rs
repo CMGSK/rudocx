@@ -18,4 +18,21 @@ pub enum RudocxError {
     LoadContentMismatch(String),
     #[error("Feature not supported: {0}")]
     Unsupported(String),
+    #[error("Run property error: {0}")]
+    RunPropertyError(RudocxStyleError),
+    
 }
+
+#[derive(Error, Debug)]
+pub enum RudocxStyleError{
+    #[error("HEX code not valid: {0}")]
+    InvalidHex(String),
+    #[error("Property not set: {0}")]
+    PropertyNotSet(String),
+    #[error("System fonts could not be found")]
+    SystemFontsNotFound,
+    #[error("Font not installed in your system: {0}")]
+    FontNotInstalled(String),
+}
+
+pub type Result<T> = std::result::Result<T, RudocxError>;
