@@ -11,7 +11,7 @@ use std::io::{BufReader, Cursor, Read, Write};
 use std::path::Path;
 use zip::ZipArchive;
 use zip::write::{FileOptions, ZipWriter};
-use crate::properties::{FontSet, HLColor, Underline};
+use crate::properties::{FontSet, HLColor, HexColor, Underline};
 use crate::rels::bp;
 
 /// Representation of the format applied to a text `Run` in a docx document.
@@ -19,7 +19,7 @@ use crate::rels::bp;
 /// > - **bold:** `bool` - Indicates if a text is bold [`w:b`]
 /// > - **italic:** `bool` - Indicates if a text is italic [`w:i`]
 /// > - **underline:** `Option<Underline>` - Indicates the `Underline` of a text [`w:b`]. `None` is unused.
-/// > - **color:** `Option<HexColor>` - Indicates the `HexColor` of a text font. `None` defaults to `#FFFFFF`. Note that XML tag value does **not** prepend the `#` [`w:color w:val="<HEX_VAL>"`]()
+/// > - **color:** `Option<HexColor>` - Indicates the `HexColor` of a text font. `None` defaults to `FFFFFF`. _Note:_ XML tag value does **not** prepend the `#` to the HEX code. [`w:color w:val="<HEX_VAL>"`]()
 /// > - **size:** `Option<u32>` - Indicates the font size of a text in half points (e.g. `21` == `10.5 pt.`). `None` defaults to 22 (11pt). [`w:sz w:val="<NUM>"`]()
 /// > - **font:** `Option<FontSet>` - Indicates the `FontSet` of a text. For `None` and other details, please refere to: [FontSet](crate::properties::FontSet) [`w:rFonts[...]`]()
 /// > - **highlight:** `Option<HLColor>` - Indicates the highlighting `HLColor` of a text. `None` is unused. Only predefined colors are accepted. For custom coloring, `Shading` is used instead. [`w:highlight w:val="<COLOR>"`]()
@@ -29,7 +29,7 @@ pub struct RunProperties {
     pub bold: bool,
     pub italic: bool,
     pub underline: Option<Underline>,
-    pub color: Option<String>,
+    pub color: Option<HexColor>,
     pub size: Option<u32>,
     pub font: Option<FontSet>,
     pub highlight: Option<HLColor>,
@@ -136,7 +136,7 @@ fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                                         if let Ok(val) =
                                             attr.decode_and_unescape_value(reader.decoder())
                                         {
-                                            props.color = Some(val.into_owned());
+                                            props.color = Some(HexColor::new(val.as_ref()));
                                             break;
                                         }
                                     }
@@ -235,7 +235,7 @@ fn generate_document_xml(document: &Document) -> Result<String, RudocxError> {
                                                 if let Some(color) = &r.properties.color {
                                                     writer
                                                         .create_element("w:color")
-                                                        .with_attribute(("w:val", color.as_str()))
+                                                        .with_attribute(("w:val", color.value().as_str()))
                                                         .write_empty()?;
                                                 }
                                                 Ok(())
@@ -371,7 +371,7 @@ mod tests {
                                 bold: false,
                                 italic: false,
                                 underline: None,
-                                color: Some("FF0000".to_string()), // Red
+                                color: Some(HexColor::new("FF0000")), // Red
                                 size: None,
                                 font: None,
                                 highlight: None,

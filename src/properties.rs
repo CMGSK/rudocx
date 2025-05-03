@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::{Display, Formatter};
 use std::path::Path;
 use std::slice::Windows;
 use crate::error::RudocxStyleError;
@@ -7,7 +8,7 @@ type Result<T> = std::result::Result<T, RudocxStyleError>;
 
 // --- Colors ---
 
-///Represents a HEX color code, including the `#` character.
+///Represents a HEX color code, without the `#` character.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HexColor {
     value: String,
@@ -15,24 +16,24 @@ pub struct HexColor {
 
 impl Default for HexColor {
     fn default() -> Self {
-        Self {value: String::from("#FFFFFF")}
+        Self {value: String::from("FFFFFF")}
     }
 }
 
 impl HexColor {
-    /// Receives a HEX color code. `#` is required. Alpha is not supported. Wrong input defaults to Black.
+    /// Receives a HEX color code. `#` is **NOT** required. Alpha is not supported. Wrong input defaults to Black.
     pub fn new(color: &str) -> Self {
        match check_hex(color) {
            Ok(_) => Self { value: String::from(color) },
-           Err(_) => Self { value: String::from("#FFFFFF") },
-       } 
+           Err(_) => Self { value: String::from("FFFFFF") },
+       }
     }
-    
-    /// Get the value of the struct as `String`. `#` included.
-    pub fn get_value(&self) -> String {
+
+    /// Get the value of the struct as `String`.
+    pub fn value(&self) -> String {
         self.value.clone()
     }
-    
+
     /// Change the value of the struct. Same rules as [new](crate::properties::HexColor::new) apply, but wrong input value results in an `Err()`
     pub fn change_value(&mut self, value: &str) -> Result<()> {
         match check_hex(value) {
@@ -43,10 +44,10 @@ impl HexColor {
 }
 
 fn check_hex(value: &str) ->  Result<()> {
-    if !value.starts_with('#') && value.len() != 7 {
+    if !value.len() == 6 {
         return Err(RudocxStyleError::InvalidHex(value.to_string()));
     }
-    if !value[1..].chars().all(|x| x.is_ascii_hexdigit()) {
+    if !value.chars().all(|x| x.is_ascii_hexdigit()) {
         return Err(RudocxStyleError::InvalidHex(value.to_string()));
     }
     Ok(())
@@ -110,8 +111,8 @@ pub struct Underline {
 }
 
 impl Default for Underline {
-    fn default() -> Self { 
-        Self{ value: None } 
+    fn default() -> Self {
+        Self{ value: None }
     }
 }
 
@@ -119,14 +120,14 @@ impl Underline {
     pub fn new(style: UnderlineStyle) -> Self {
         Self { value: Some(style) }
     }
-    
-    pub fn get_value(&self) -> String {
-        match self.value.clone() { 
+
+    pub fn value(&self) -> String {
+        match self.value.clone() {
             Some(v) => v.to_string(),
             None => "None".to_string(),
         }
     }
-    
+
     pub fn change_value(&mut self, value: Option<UnderlineStyle>) -> Result<()> {
         self.value = value;
         Ok(())
@@ -186,10 +187,10 @@ impl fmt::Display for UnderlineStyle {
 // --- FontSet ---
 
 /// Represents font settings for a run in a DOCX document.
-/// 
+///
 /// Controls which fonts are used for different character types in the `w:rFonts` XML tag (e.g. [`<w:rFonts ascii="Arial" hAnsi="Calibri" cs="Times New Roman"/>`]())
-/// 
-/// Docx specifications define that an rFonts tag can appear empty, and this will result in a fallback to the default theme/style/font defined in the software. 
+///
+/// Docx specifications define that an rFonts tag can appear empty, and this will result in a fallback to the default theme/style/font defined in the software.
 /// This, however, does not apply to this specific struct, where although all of the values within it can be `None`. Constructor always fallback to a default.
 /// If getter is invoked with all attributes set to `None`, it will result in an `Err()`.
 ///
@@ -203,7 +204,7 @@ impl fmt::Display for UnderlineStyle {
 /// > - `eastAsia_theme`: Theme font for East Asian.
 /// > - `cs_theme`: Theme font for complex scripts.
 /// > - `hint`: Font rendering hint (e.g. `default`, `eastAsia`, `cs`...).
-/// 
+///
 #[derive(Debug, Clone, PartialEq)]
 pub struct FontSet {
     ascii: Option<String>,
@@ -245,11 +246,26 @@ pub enum FontType {
     CsTheme,
 }
 
+impl fmt::Display for FontType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            FontType::Ascii => write!(f, "ascii"),
+            FontType::HiAnsi => write!(f, "hAnsi"),
+            FontType::EastAsia => write!(f, "eastAsia"),
+            FontType::Cs => write!(f, "cs"),
+            FontType::AsciiTheme => write!(f, "asciiTheme"),
+            FontType::HiAnsiTheme => write!(f, "hiAnsiTheme"),
+            FontType::EastAsiaTheme => write!(f, "eastAsiaTheme"),
+            FontType::CsTheme => write!(f, "csTheme"),
+        }
+    }
+}
+
 impl FontSet {
     pub fn new(value: String, r#type: FontType) -> Self {
         let mut new_font = Self::default();
         //TODO: Check font availability
-        
+
         match r#type {
             FontType::Ascii => new_font.ascii = Some(value),
             FontType::HiAnsi => new_font.hi_ansi = Some(value),
@@ -260,34 +276,43 @@ impl FontSet {
             FontType::EastAsiaTheme => new_font.east_asia_theme = Some(value),
             FontType::CsTheme => new_font.cs_theme = Some(value),
         };
-        
+
         new_font
     }
     
+    pub fn value(&self) -> Result<String> {
+        self.get_hint()
+    }
+
     /// Get the value of the FontType defined at the Hint property
     pub fn get_hint(&self) -> Result<String> {
-       match self.hint {
-           FontType::Ascii => self.ascii.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("Ascii FontType"))),
-           FontType::HiAnsi => self.hi_ansi.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("HiAnsi FontType"))),
-           FontType::EastAsia => self.east_asia.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("EastAsia FontType"))),
-           FontType::Cs => self.cs.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("Cs FontType"))),
-           FontType::AsciiTheme => self.ascii_theme.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("AsciiTheme FontType"))),
-           FontType::HiAnsiTheme => self.hi_ansi_theme.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("HiAnsiTheme FontType"))),
-           FontType::EastAsiaTheme => self.east_asia_theme.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("EastAsiaTheme FontType"))),
-           FontType::CsTheme => self.cs_theme.clone().ok_or(RudocxStyleError::PropertyNotSet(String::from("CsTheme FontType")))
-       } 
+        let hint = match self.hint {
+            FontType::Ascii => self.ascii.clone(),
+            FontType::HiAnsi => self.hi_ansi.clone(),
+            FontType::EastAsia => self.east_asia.clone(),
+            FontType::Cs => self.cs.clone(),
+            FontType::AsciiTheme => self.ascii_theme.clone(),
+            FontType::HiAnsiTheme => self.hi_ansi_theme.clone(),
+            FontType::EastAsiaTheme => self.east_asia_theme.clone(),
+            FontType::CsTheme => self.cs_theme.clone(),
+        };
+
+        match hint.clone() {
+            Some(s) => Ok(s),
+            None => Err(RudocxStyleError::HintPointsNone(self.hint.clone())),
+        }
     }
-    
+
     /// Get the value of the Hint property
     pub fn get_hint_value(&self) -> FontType {
         self.hint.clone()
     }
-    
+
     pub fn set_hint_value(&mut self, value: FontType) -> Result<()> {
         self.hint = value;
         Ok(())
     }
-    
+
     pub fn change_value(&mut self, value: Option<String>, r#type: FontType ) -> Result<()> {
         match r#type {
             FontType::Ascii => self.ascii = value,
@@ -303,7 +328,7 @@ impl FontSet {
         //TODO: Check this is not full of None
         Ok(())
     }
-    
+
     fn check_font(font: &str) -> Result<()> {
         #[cfg(target_os = "linux")]
         {
@@ -311,7 +336,7 @@ impl FontSet {
             let fonts = dirs.iter().flat_map(|x| list_fonts(x)).collect::<Vec<String>>();
             return check_installed(font, fonts);
         }
-        
+
         #[cfg(target_os = "windows")]
         {
             let fonts = list_fonts("C:\\Windows\\Fonts");
@@ -324,7 +349,7 @@ impl FontSet {
             let fonts = dirs.iter().flat_map(|x| list_fonts(x)).collect::<Vec<String>>();
             return check_installed(font, fonts);
         }
-        
+
         fn list_fonts<P: AsRef<Path>>(path: P) -> Vec<String> {
             let mut fonts: Vec<String> = Vec::new();
             if let Ok(entries) = std::fs::read_dir(path) {
@@ -334,15 +359,15 @@ impl FontSet {
                         if ext == "ttf" || ext == "otf" {
                             if let Some(name) = p.file_name().and_then(|x| x.to_str()) {
                                 fonts.push(name.to_string());
-                            } 
+                            }
                         }
                     }
                 }
             }
-            
+
             fonts
         }
-        
+
         fn check_installed(value: &str, fonts: Vec<String>) -> Result<()>{
             if fonts.is_empty() {
                 Err(RudocxStyleError::SystemFontsNotFound)
@@ -354,7 +379,7 @@ impl FontSet {
             }
         }
     }
-    
+
 }
 
 

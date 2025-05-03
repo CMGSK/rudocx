@@ -1,4 +1,5 @@
 use thiserror::Error;
+use crate::properties::FontType;
 
 #[derive(Error, Debug)]
 pub enum RudocxError {
@@ -23,12 +24,14 @@ pub enum RudocxError {
     
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum RudocxStyleError{
     #[error("HEX code not valid: {0}")]
     InvalidHex(String),
     #[error("Property not set: {0}")]
     PropertyNotSet(String),
+    #[error("Hint FontType is not set: {0}")]
+    HintPointsNone(FontType),
     #[error("System fonts could not be found")]
     SystemFontsNotFound,
     #[error("Font not installed in your system: {0}")]
