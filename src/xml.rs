@@ -1,0 +1,252 @@
+use crate::elements::{Document, HexColor, Paragraph, Run, RunProperties};
+use crate::errors::RudocxError;
+
+use quick_xml::events::{BytesText, Event};
+use quick_xml::{Reader, Writer};
+use std::io::Cursor;
+
+// Helper function to generate the word/document.xml content
+pub fn generate_document_xml(document: &Document) -> Result<String, RudocxError> {
+    let mut writer = Writer::new(Cursor::new(Vec::new()));
+
+    writer
+        .create_element("w:document")
+        .with_attribute((
+            "xmlns:w",
+            "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        ))
+        .write_inner_content(|writer| {
+            writer
+                .create_element("w:body")
+                .write_inner_content(|writer| {
+                    for p in &document.paragraphs {
+                        writer.create_element("w:p").write_inner_content(|writer| {
+                            for r in &p.runs {
+                                writer.create_element("w:r").write_inner_content(|writer| {
+                                    if r.properties.has_formatting() {
+                                        writer.create_element("w:rPr").write_inner_content(
+                                            |writer| {
+                                                if r.properties.bold {
+                                                    writer.create_element("w:b").write_empty()?;
+                                                }
+                                                if r.properties.italic {
+                                                    writer.create_element("w:i").write_empty()?;
+                                                }
+                                                if let Some(color) = &r.properties.color {
+                                                    writer
+                                                        .create_element("w:color")
+                                                        .with_attribute((
+                                                            "w:val",
+                                                            color.value().as_str(),
+                                                        ))
+                                                        .write_empty()?;
+                                                }
+                                                Ok(())
+                                            },
+                                        )?;
+                                    }
+                                    writer
+                                        .create_element("w:t")
+                                        .write_text_content(BytesText::new(&r.text))?;
+                                    Ok(())
+                                })?;
+                            }
+                            Ok(())
+                        })?;
+                    }
+                    Ok(())
+                })?;
+            Ok(())
+        })?;
+
+    let xml_bytes = writer.into_inner().into_inner();
+    String::from_utf8(xml_bytes).map_err(RudocxError::Utf8Error)
+}
+
+pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
+    let mut reader = Reader::from_str(xml_content);
+    let mut buf = Vec::new();
+    let mut document = Document::default();
+    let mut current_paragraph: Option<Paragraph> = None;
+    let mut current_run: Option<Run> = None;
+    let mut current_run_properties: Option<RunProperties> = None;
+    let mut is_in_run_properties = false;
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(ref e)) => match e.name().as_ref() {
+                b"w:p" => {
+                    if let Some(p) = current_paragraph.take() {
+                        document.paragraphs.push(p);
+                    }
+                    current_paragraph = Some(Paragraph::default());
+                }
+                b"w:r" => {
+                    if let Some(r) = current_run.take() {
+                        if let Some(ref mut p) = current_paragraph {
+                            p.runs.push(r);
+                        }
+                    }
+                    current_run_properties = Some(RunProperties::default());
+                    current_run = Some(Run {
+                        properties: RunProperties::default(),
+                        text: String::new(),
+                    });
+                }
+                b"w:rPr" => {
+                    is_in_run_properties = true;
+                }
+                b"w:t" => {}
+                _ => (),
+            },
+            Ok(Event::Empty(ref e)) => match e.name().as_ref() {
+                b"w:b" => {
+                    if is_in_run_properties {
+                        if let Some(ref mut props) = current_run_properties {
+                            props.bold = true;
+                        }
+                    }
+                }
+                b"w:i" => {
+                    if is_in_run_properties {
+                        if let Some(ref mut props) = current_run_properties {
+                            props.italic = true;
+                        }
+                    }
+                }
+                b"w:color" => {
+                    if is_in_run_properties {
+                        if let Some(ref mut props) = current_run_properties {
+                            for attr_result in e.attributes() {
+                                if let Ok(attr) = attr_result {
+                                    if attr.key.as_ref() == b"w:val" {
+                                        if let Ok(val) =
+                                            attr.decode_and_unescape_value(reader.decoder())
+                                        {
+                                            props.color = Some(HexColor::new(val.as_ref()));
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => (),
+            },
+            Ok(Event::Text(e)) => {
+                if let Some(ref mut run) = current_run {
+                    run.text.push_str(&e.unescape()?.to_string());
+                }
+            }
+            Ok(Event::End(ref e)) => match e.name().as_ref() {
+                b"w:p" => {
+                    if let Some(p) = current_paragraph.take() {
+                        if let Some(r) = current_run.take() {
+                            if let Some(mut current_p) = Some(p) {
+                                current_p.runs.push(r);
+                                document.paragraphs.push(current_p);
+                            }
+                        } else {
+                            document.paragraphs.push(p);
+                        }
+                    }
+                    current_paragraph = None;
+                }
+                b"w:r" => {
+                    if let Some(mut run) = current_run.take() {
+                        if let Some(props) = current_run_properties.take() {
+                            run.properties = props;
+                        }
+                        if let Some(ref mut p) = current_paragraph {
+                            p.runs.push(run);
+                        }
+                    }
+                    current_run = None;
+                    current_run_properties = None;
+                }
+                b"w:rPr" => {
+                    is_in_run_properties = false;
+                }
+                _ => (),
+            },
+            Ok(Event::Eof) => {
+                if let Some(p) = current_paragraph.take() {
+                    if let Some(r) = current_run.take() {
+                        if let Some(mut current_p) = Some(p) {
+                            current_p.runs.push(r);
+                            document.paragraphs.push(current_p);
+                        }
+                    } else {
+                        document.paragraphs.push(p);
+                    }
+                }
+                break;
+            }
+            Err(e) => return Err(RudocxError::XmlError(e)),
+            _ => (),
+        }
+        buf.clear();
+    }
+
+    Ok(document)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_simple_doc() {
+        let xml_input = r#"
+            <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+                <w:body>
+                    <w:p>
+                        <w:r><w:t>This is plain text.</w:t></w:r>
+                    </w:p>
+                    <w:p>
+                        <w:r><w:rPr><w:b/></w:rPr><w:t>This is bold.</w:t></w:r>
+                        <w:r><w:t xml:space="preserve"> </w:t></w:r>
+                        <w:r><w:rPr><w:i/></w:rPr><w:t>This is italic.</w:t></w:r>
+                    </w:p>
+                    <w:p>
+                        <w:r><w:rPr><w:b/><w:i/></w:rPr><w:t>Bold and Italic.</w:t></w:r>
+                    </w:p>
+                </w:body>
+            </w:document>
+        "#;
+
+        let result = parse_document_xml(xml_input);
+        assert!(result.is_ok());
+        let doc = result.unwrap();
+
+        assert_eq!(doc.paragraphs.len(), 3);
+
+        // Paragraph 1: Plain text
+        assert_eq!(doc.paragraphs[0].runs.len(), 1);
+        assert_eq!(doc.paragraphs[0].runs[0].text, "This is plain text.");
+        assert!(!doc.paragraphs[0].runs[0].properties.bold);
+        assert!(!doc.paragraphs[0].runs[0].properties.italic);
+
+        // Paragraph 2: Bold, space, Italic
+        assert_eq!(doc.paragraphs[1].runs.len(), 3);
+        // Run 1: Bold
+        assert_eq!(doc.paragraphs[1].runs[0].text, "This is bold.");
+        assert!(doc.paragraphs[1].runs[0].properties.bold);
+        assert!(!doc.paragraphs[1].runs[0].properties.italic);
+        // Run 2: Space (should be preserved)
+        assert_eq!(doc.paragraphs[1].runs[1].text, " ");
+        assert!(!doc.paragraphs[1].runs[1].properties.bold);
+        assert!(!doc.paragraphs[1].runs[1].properties.italic);
+        // Run 3: Italic
+        assert_eq!(doc.paragraphs[1].runs[2].text, "This is italic.");
+        assert!(!doc.paragraphs[1].runs[2].properties.bold);
+        assert!(doc.paragraphs[1].runs[2].properties.italic);
+
+        // Paragraph 3: Bold and Italic
+        assert_eq!(doc.paragraphs[2].runs.len(), 1);
+        assert_eq!(doc.paragraphs[2].runs[0].text, "Bold and Italic.");
+        assert!(doc.paragraphs[2].runs[0].properties.bold);
+        assert!(doc.paragraphs[2].runs[0].properties.italic);
+    }
+}

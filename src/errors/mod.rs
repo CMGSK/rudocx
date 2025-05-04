@@ -1,5 +1,5 @@
+use crate::elements::FontType;
 use thiserror::Error;
-use crate::properties::FontType;
 
 #[derive(Error, Debug)]
 pub enum RudocxError {
@@ -21,21 +21,26 @@ pub enum RudocxError {
     Unsupported(String),
     #[error("Run property error: {0}")]
     RunPropertyError(RudocxStyleError),
-    
 }
 
 #[derive(Error, Debug, Clone)]
-pub enum RudocxStyleError{
+pub enum RudocxStyleError {
     #[error("HEX code not valid: {0}")]
     InvalidHex(String),
     #[error("Property not set: {0}")]
     PropertyNotSet(String),
-    #[error("Hint FontType is not set: {0}")]
+    #[error("Hint points to None value: {0} FontType is None")]
     HintPointsNone(FontType),
     #[error("System fonts could not be found")]
     SystemFontsNotFound,
     #[error("Font not installed in your system: {0}")]
     FontNotInstalled(String),
+    #[error("Empty FontSet. This is discouraged to use.")]
+    EmptyFontSet,
+    #[error("Default font type is not modifiable. Fallbacks to Software/System/Language.")]
+    DefaultHintIsUnmodifiable,
+    #[error("{0}")]
+    Undefined(String),
 }
 
 pub type Result<T> = std::result::Result<T, RudocxError>;
