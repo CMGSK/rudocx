@@ -1,4 +1,4 @@
-use crate::elements::run::Run;
+use crate::elements::Run;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Paragraph {
