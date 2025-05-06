@@ -91,6 +91,6 @@ impl RunProperties {
     }
 
     pub fn has_formatting(&self) -> bool {
-        self == &Self::default()
+        self != &Self::default()
     }
 }
