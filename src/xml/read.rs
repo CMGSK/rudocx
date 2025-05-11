@@ -1,67 +1,7 @@
 use crate::elements::{Document, HexColor, Paragraph, Run, RunProperties};
 use crate::errors::RudocxError;
-
-use quick_xml::events::{BytesText, Event};
-use quick_xml::{Reader, Writer};
-use std::io::Cursor;
-
-// Helper function to generate the word/document.xml content
-pub fn generate_document_xml(document: &Document) -> Result<String, RudocxError> {
-    let mut writer = Writer::new(Cursor::new(Vec::new()));
-
-    writer
-        .create_element("w:document")
-        .with_attribute((
-            "xmlns:w",
-            "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-        ))
-        .write_inner_content(|writer| {
-            writer
-                .create_element("w:body")
-                .write_inner_content(|writer| {
-                    for p in &document.paragraphs {
-                        writer.create_element("w:p").write_inner_content(|writer| {
-                            for r in &p.runs {
-                                writer.create_element("w:r").write_inner_content(|writer| {
-                                    if r.properties.has_formatting() {
-                                        writer.create_element("w:rPr").write_inner_content(
-                                            |writer| {
-                                                if r.properties.bold {
-                                                    writer.create_element("w:b").write_empty()?;
-                                                }
-                                                if r.properties.italic {
-                                                    writer.create_element("w:i").write_empty()?;
-                                                }
-                                                if let Some(color) = &r.properties.color {
-                                                    writer
-                                                        .create_element("w:color")
-                                                        .with_attribute((
-                                                            "w:val",
-                                                            color.value().as_str(),
-                                                        ))
-                                                        .write_empty()?;
-                                                }
-                                                Ok(())
-                                            },
-                                        )?;
-                                    }
-                                    writer
-                                        .create_element("w:t")
-                                        .write_text_content(BytesText::new(&r.text))?;
-                                    Ok(())
-                                })?;
-                            }
-                            Ok(())
-                        })?;
-                    }
-                    Ok(())
-                })?;
-            Ok(())
-        })?;
-
-    let xml_bytes = writer.into_inner().into_inner();
-    String::from_utf8(xml_bytes).map_err(RudocxError::Utf8Error)
-}
+use quick_xml::events::Event;
+use quick_xml::Reader;
 
 pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
     let mut reader = Reader::from_str(xml_content);

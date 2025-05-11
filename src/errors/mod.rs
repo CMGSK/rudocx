@@ -43,4 +43,10 @@ pub enum RudocxStyleError {
     Undefined(String),
 }
 
+impl From<RudocxError> for std::io::Error {
+    fn from(error: RudocxError) -> Self {
+        std::io::Error::new(std::io::ErrorKind::Other, error.to_string())
+    }
+}
+
 pub type Result<T> = std::result::Result<T, RudocxError>;

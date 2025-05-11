@@ -4,6 +4,8 @@ use crate::errors::RudocxStyleError;
 use std::fmt;
 use std::fmt::Formatter;
 
+type Result<T> = std::result::Result<T, RudocxStyleError>;
+
 ///Represents a HEX color code, without the `#` character.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HexColor {
@@ -37,7 +39,7 @@ impl HexColor {
     }
 
     /// Change the value of the struct. Same rules as [new](crate::properties::HexColor::new) apply, but wrong input value results in an `Err()`
-    pub fn change_value(&mut self, value: &str) -> crate::elements::run_properties::Result<()> {
+    pub fn change_value(&mut self, value: &str) -> Result<()> {
         match check_hex(value) {
             Ok(_) => Ok(self.value = value.to_string()),
             Err(e) => Err(e),
@@ -45,7 +47,7 @@ impl HexColor {
     }
 }
 
-fn check_hex(value: &str) -> crate::elements::run_properties::Result<()> {
+fn check_hex(value: &str) -> Result<()> {
     if !value.len() == 6 {
         return Err(RudocxStyleError::InvalidHex(value.to_string()));
     }
@@ -58,6 +60,24 @@ fn check_hex(value: &str) -> crate::elements::run_properties::Result<()> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct HLColor {
     pub value: Option<HighlightPalette>,
+}
+
+impl HLColor {
+    pub fn new(color: HighlightPalette) -> Self {
+        Self { value: Some(color) }
+    }
+
+    pub fn value(&self) -> String {
+        match &self.value {
+            Some(v) => v.to_string(),
+            None => String::new(),
+        }
+    }
+
+    pub fn change_value(&mut self, value: Option<HighlightPalette>) -> Result<()> {
+        self.value = value;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

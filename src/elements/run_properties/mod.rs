@@ -21,11 +21,12 @@ type Result<T> = std::result::Result<T, RudocxStyleError>;
 /// ### Fields
 /// > - **bold:** `bool` - Indicates if a text is bold [`w:b`]
 /// > - **italic:** `bool` - Indicates if a text is italic [`w:i`]
-/// > - **underline:** `Option<Underline>` - Indicates the `Underline` of a text [`w:b`]. `None` is unused.
+/// > - **underline:** `Option<Underline>` - Indicates the `Underline` of a text [`w:u`]. `None` is unused.
 /// > - **color:** `Option<HexColor>` - Indicates the `HexColor` of a text font. `None` defaults to `FFFFFF`. _Note:_ XML tag value does **not** prepend the `#` to the HEX code. [`w:color w:val="<HEX_VAL>"`]()
 /// > - **size:** `Option<u32>` - Indicates the font size of a text in half points (e.g. `21` == `10.5 pt.`). `None` defaults to 22 (11pt). [`w:sz w:val="<NUM>"`]()
 /// > - **font:** `Option<FontSet>` - Indicates the `FontSet` of a text. For `None` and other details, please refere to: [FontSet](crate::properties::FontSet) [`w:rFonts[...]`]()
 /// > - **highlight:** `Option<HLColor>` - Indicates the highlighting `HLColor` of a text. `None` is unused. Only predefined colors are accepted. For custom coloring, `Shading` is used instead. [`w:highlight w:val="<COLOR>"`]()
+/// TODO: Add missing documentation here
 ///
 /// Note: It's not in the scope right now to add direct support for `Cs` `TypeFont` properties such as szCs, bCs, etc.
 #[derive(Debug, Clone, PartialEq)]
