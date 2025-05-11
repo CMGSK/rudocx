@@ -115,7 +115,7 @@ fn write_paragraph_xml(
 }
 
 fn write_run_xml(writer: &mut Writer<Cursor<Vec<u8>>>, run: &Run) -> Result<(), RudocxError> {
-    writer.create_element("w:p").write_inner_content(|writer| {
+    writer.create_element("w:r").write_inner_content(|writer| {
         write_run_properties_xml(writer, &run.properties)?;
         writer
             .create_element("w:t")

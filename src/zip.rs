@@ -45,7 +45,7 @@ pub fn save<P: AsRef<Path>>(document: &Document, path: P) -> Result<(), RudocxEr
     zip.write_all(bp::DOC_RELS_XML_CONTENT.as_bytes())?;
 
     // Generate and write word/document.xml
-    let document_xml = generate_document_xml(document)?;
+    let document_xml = generate(document)?;
     zip.start_file(bp::DOCUMENT_XML_PATH, options)?;
     zip.write_all(document_xml.as_bytes())?;
 
