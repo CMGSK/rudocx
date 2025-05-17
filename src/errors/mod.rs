@@ -21,6 +21,8 @@ pub enum RudocxError {
     Unsupported(String),
     #[error("Run property error: {0}")]
     RunPropertyError(RudocxStyleError),
+    #[error("Could not convert to Integer: {0}")]
+    NumParseError(#[from] std::num::ParseIntError),
 }
 
 #[derive(Error, Debug, Clone)]

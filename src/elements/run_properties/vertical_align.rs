@@ -30,6 +30,7 @@ pub enum AlignValues {
     Superscript,
     Subscript,
 }
+
 impl fmt::Display for AlignValues {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
@@ -41,5 +42,17 @@ impl fmt::Display for AlignValues {
                 AlignValues::Superscript => "superscript",
             }
         )
+    }
+}
+
+///Note that it will not return the correct value if you dont follow OOXML standard capitalization
+impl<T: Into<String>> From<T> for AlignValues {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "baseline" => AlignValues::Baseline,
+            "superscript" => AlignValues::Superscript,
+            "subscript" => AlignValues::Subscript,
+            _ => AlignValues::Baseline,
+        }
     }
 }

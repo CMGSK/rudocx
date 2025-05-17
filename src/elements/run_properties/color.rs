@@ -99,6 +99,29 @@ pub enum HighlightPalette {
     // Note: "None" is represented by Option::None in the HLColor struct value.
 }
 
+///Note that it will not return the correct value if you dont follow OOXML standard capitalization
+impl<T: Into<String>> From<T> for HighlightPalette {
+    fn from(color: T) -> Self {
+        match color.into().as_ref() {
+            "yellow" => Self::Yellow,
+            "darkYellow" => Self::DarkYellow,
+            "green" => Self::Green,
+            "darkGreen" => Self::DarkGreen,
+            "cyan" => Self::Cyan,
+            "darkCyan" => Self::DarkCyan,
+            "magenta" => Self::Magenta,
+            "darkMagenta" => Self::DarkMagenta,
+            "blue" => Self::Blue,
+            "darkBlue" => Self::DarkBlue,
+            "red" => Self::Red,
+            "darkRed" => Self::DarkRed,
+            "black" => Self::Black,
+            "white" => Self::White,
+            _ => Self::White,
+        }
+    }
+}
+
 impl fmt::Display for HighlightPalette {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(

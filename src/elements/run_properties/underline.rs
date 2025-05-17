@@ -58,6 +58,32 @@ pub enum UnderlineStyle {
     // Note: "None" is represented by Option::None in the Underline struct value.
 }
 
+///Note that it will not return the correct value if you dont follow OOXML standard capitalization
+impl<T: Into<String>> From<T> for UnderlineStyle {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "single" => UnderlineStyle::Single,
+            "words" => UnderlineStyle::Words,
+            "double" => UnderlineStyle::Double,
+            "thick" => UnderlineStyle::Thick,
+            "dotted" => UnderlineStyle::Dotted,
+            "dottedHeavy" => UnderlineStyle::DottedHeavy,
+            "dash" => UnderlineStyle::Dash,
+            "dashedHeavy" => UnderlineStyle::DashedHeavy,
+            "dashLong" => UnderlineStyle::DashLong,
+            "dashLongHeavy" => UnderlineStyle::DashLongHeavy,
+            "dotDash" => UnderlineStyle::DotDash,
+            "dashDotHeavy" => UnderlineStyle::DashDotHeavy,
+            "dotDotDash" => UnderlineStyle::DotDotDash,
+            "dashDotDotHeavy" => UnderlineStyle::DashDotDotHeavy,
+            "wave" => UnderlineStyle::Wave,
+            "wavyHeavy" => UnderlineStyle::WavyHeavy,
+            "wavyDouble" => UnderlineStyle::WavyDouble,
+            _ => UnderlineStyle::Single,
+        }
+    }
+}
+
 impl fmt::Display for UnderlineStyle {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
