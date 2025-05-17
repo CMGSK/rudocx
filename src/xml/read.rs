@@ -13,14 +13,18 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
     let mut is_in_run_properties = false;
 
     loop {
+        //Loop through all the events from an XML string
         match reader.read_event_into(&mut buf) {
+            //If a tag gets open
             Ok(Event::Start(ref e)) => match e.name().as_ref() {
+                //Paragraphs
                 b"w:p" => {
                     if let Some(p) = current_paragraph.take() {
                         document.paragraphs.push(p);
                     }
                     current_paragraph = Some(Paragraph::default());
                 }
+                //Runs
                 b"w:r" => {
                     if let Some(r) = current_run.take() {
                         if let Some(ref mut p) = current_paragraph {
@@ -31,15 +35,21 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                     current_run = Some(Run {
                         properties: RunProperties::default(),
                         text: String::new(),
+                        space_preserve: false,
                     });
                 }
+                //RunProperties
                 b"w:rPr" => {
                     is_in_run_properties = true;
                 }
+                //Text
                 b"w:t" => {}
+                //Skip
                 _ => (),
             },
+            //If the tag is empty, which means certain elements such as style markers
             Ok(Event::Empty(ref e)) => match e.name().as_ref() {
+                //Bold
                 b"w:b" => {
                     if is_in_run_properties {
                         if let Some(ref mut props) = current_run_properties {
@@ -47,6 +57,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                         }
                     }
                 }
+                //Italics
                 b"w:i" => {
                     if is_in_run_properties {
                         if let Some(ref mut props) = current_run_properties {
@@ -54,6 +65,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                         }
                     }
                 }
+                //Color
                 b"w:color" => {
                     if is_in_run_properties {
                         if let Some(ref mut props) = current_run_properties {
@@ -72,14 +84,18 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                         }
                     }
                 }
+                //Skip
                 _ => (),
             },
+            //If tag contains plain text
             Ok(Event::Text(e)) => {
                 if let Some(ref mut run) = current_run {
                     run.text.push_str(&e.unescape()?.to_string());
                 }
             }
+            //If a tag ends
             Ok(Event::End(ref e)) => match e.name().as_ref() {
+                //Paragraph
                 b"w:p" => {
                     if let Some(p) = current_paragraph.take() {
                         if let Some(r) = current_run.take() {
@@ -93,6 +109,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                     }
                     current_paragraph = None;
                 }
+                //Run
                 b"w:r" => {
                     if let Some(mut run) = current_run.take() {
                         if let Some(props) = current_run_properties.take() {
@@ -105,11 +122,14 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                     current_run = None;
                     current_run_properties = None;
                 }
+                //RunProperties
                 b"w:rPr" => {
                     is_in_run_properties = false;
                 }
+                //Skip
                 _ => (),
             },
+            //Detect End of File, push and set remaining dangling data and break the loop
             Ok(Event::Eof) => {
                 if let Some(p) = current_paragraph.take() {
                     if let Some(r) = current_run.take() {

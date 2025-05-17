@@ -67,6 +67,7 @@ mod tests {
                         Run {
                             properties: RunProperties::default(),
                             text: "Hello ".to_string(),
+                            space_preserve: false,
                         },
                         Run {
                             properties: RunProperties {
@@ -83,6 +84,7 @@ mod tests {
                                 spacing: None,
                             },
                             text: "World".to_string(),
+                            space_preserve: false,
                         },
                         Run {
                             properties: RunProperties {
@@ -99,6 +101,7 @@ mod tests {
                                 spacing: None,
                             },
                             text: " Red!".to_string(),
+                            space_preserve: false,
                         },
                     ],
                 },
@@ -118,6 +121,7 @@ mod tests {
                             spacing: None,
                         },
                         text: "This is italic.".to_string(),
+                        space_preserve: false,
                     }],
                 },
             ],
