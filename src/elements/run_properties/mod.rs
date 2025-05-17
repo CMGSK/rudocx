@@ -44,6 +44,8 @@ pub struct RunProperties {
     pub spacing: Option<u32>,
 }
 
+//TODO: Change all constructors to accept T: Into<String> as in UnderlineStyle
+
 impl Default for RunProperties {
     fn default() -> Self {
         Self {

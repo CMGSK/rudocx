@@ -70,6 +70,24 @@ pub enum FontType {
     Default,
 }
 
+///Note that it will not return the correct value if you dont follow OOXML standard capitalization
+impl<T: Into<String>> From<T> for FontType {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "ascii" => FontType::Ascii,
+            "hAnsi" => FontType::HiAnsi,
+            "eastAsia" => FontType::EastAsia,
+            "cs" => FontType::Cs,
+            "asciiTheme" => FontType::AsciiTheme,
+            "hiAnsiTheme" => FontType::HiAnsiTheme,
+            "eastAsiaTheme" => FontType::EastAsiaTheme,
+            "csTheme" => FontType::CsTheme,
+            "default" => FontType::Default,
+            _ => FontType::Default,
+        }
+    }
+}
+
 impl fmt::Display for FontType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
