@@ -23,7 +23,7 @@ pub fn load<P: AsRef<Path>>(path: P) -> Result<Document, RudocxError> {
         .read_to_string(&mut xml_content)
         .map_err(RudocxError::IoError)?;
 
-    parse_document_xml(&xml_content)
+    parse(&xml_content)
 }
 
 // Helper function to parse the actual XML content
@@ -143,6 +143,7 @@ mod tests {
             load_result.err()
         );
         let loaded_doc = load_result.unwrap();
+        println!("{:#?}", loaded_doc);
 
         assert_eq!(
             original_doc, loaded_doc,

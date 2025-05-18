@@ -6,6 +6,7 @@ use crate::errors::RudocxError;
 use quick_xml::events::attributes::Attributes;
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use std::ops::DerefMut;
 
 /// Struct to contain the current status of
 struct CurrentData {
@@ -70,10 +71,8 @@ fn parse_ooxml(content: &str) -> Result<Document, RudocxError> {
 }
 
 fn handle_text(data: &mut CurrentData, text: String) -> Result<(), RudocxError> {
-    if let Some(_) = &data.run {
-        let mut temp = data.run.clone().unwrap();
-        temp.text = text;
-        data.run = Some(temp);
+    if let Some(ref mut r) = data.run {
+        r.text.push_str(&text);
     }
     Ok(())
 }
@@ -81,14 +80,14 @@ fn handle_text(data: &mut CurrentData, text: String) -> Result<(), RudocxError> 
 fn handle_open_tag(
     tag: &[u8],
     data: &mut CurrentData,
-    attr: &mut Attributes,
-    reader: &Reader<&[u8]>,
+    _attr: &mut Attributes,
+    _reader: &Reader<&[u8]>,
 ) -> Result<(), RudocxError> {
     match tag {
         //Plain text
-        b"r:t" => Ok(()),
+        b"w:t" => Ok(()),
         //RunProperties
-        b"r:rPr" => {
+        b"w:rPr" => {
             data.in_run_properties = true;
             Ok(())
         }
@@ -393,12 +392,14 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
         }
         //Paragraph
         b"w:p" => {
-            if let Some(ref mut p) = data.paragraph {
-                if let Some(ref r) = data.run {
-                    p.runs.push(r.clone());
-                    data.document.paragraphs.push(p.clone());
+            if let Some(p) = data.paragraph.take() {
+                if let Some(r) = data.run.take() {
+                    if let Some(mut p) = Some(p) {
+                        p.runs.push(r);
+                        data.document.paragraphs.push(p);
+                    }
                 } else {
-                    data.document.paragraphs.push(p.clone());
+                    data.document.paragraphs.push(p);
                 }
             }
             data.paragraph = None;
@@ -406,15 +407,14 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
         }
         //Run
         b"w:r" => {
-            if let Some(ref mut r) = data.run {
-                if let Some(ref p) = data.run_properties {
-                    r.properties = p.clone();
+            if let Some(mut r) = data.run.take() {
+                if let Some(p) = data.run_properties.take() {
+                    r.properties = p;
                 }
                 if let Some(ref mut p) = data.paragraph {
-                    p.runs.push(r.clone());
+                    p.runs.push(r);
                 }
             }
-            data.paragraph = None;
             data.run = None;
             Ok(())
         }
@@ -423,20 +423,21 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
 }
 
 fn handle_eof(data: &mut CurrentData) -> Result<(), RudocxError> {
-    if let Some(ref p) = data.paragraph.clone() {
-        if let Some(ref r) = data.run {
-            let mut temp = data.paragraph.clone().unwrap();
-            temp.runs.push(r.clone());
-            data.paragraph = Some(temp);
-            data.document.paragraphs.push(p.clone());
+    if let Some(p) = data.paragraph.take() {
+        if let Some(r) = data.run.take() {
+            if let Some(mut p) = Some(p) {
+                p.runs.push(r);
+                data.document.paragraphs.push(p);
+            }
         } else {
-            data.document.paragraphs.push(p.clone());
+            data.document.paragraphs.push(p);
         }
     }
     Ok(())
 }
 
-///This function is not completed and will not work with the majority of the elements that intervene in OOXML
+///This function server as a boilerplate parser and thus it is not completed.
+///It will not work with the majority of the elements that intervene in OOXML.
 #[deprecated]
 pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
     let mut reader = Reader::from_str(xml_content);
@@ -611,9 +612,10 @@ mod tests {
             </w:document>
         "#;
 
-        let result = parse_document_xml(xml_input);
+        let result = parse(xml_input);
         assert!(result.is_ok());
         let doc = result.unwrap();
+        println!("{:?}", doc);
 
         assert_eq!(doc.paragraphs.len(), 3);
 
