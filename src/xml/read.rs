@@ -1,12 +1,8 @@
-use crate::elements::{
-    AlignValues, Document, FontSet, FontType, HLColor, HexColor, HighlightPalette, Paragraph, Run,
-    RunProperties, Underline, UnderlineStyle, VerticalAlign,
-};
+use crate::elements::*;
 use crate::errors::RudocxError;
 use quick_xml::events::attributes::Attributes;
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use std::ops::DerefMut;
 
 /// Struct to contain the current status of
 struct CurrentData {
