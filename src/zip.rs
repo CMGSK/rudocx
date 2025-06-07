@@ -63,13 +63,13 @@ mod tests {
         let original_doc = Document {
             paragraphs: vec![
                 Paragraph {
-                    runs: vec![
-                        Run {
+                    children: vec![
+                        ParagraphChild::Run(Run {
                             properties: RunProperties::default(),
                             text: "Hello ".to_string(),
                             space_preserve: false,
-                        },
-                        Run {
+                        }),
+                        ParagraphChild::Run(Run {
                             properties: RunProperties {
                                 bold: true,
                                 italic: false,
@@ -85,8 +85,8 @@ mod tests {
                             },
                             text: "World".to_string(),
                             space_preserve: false,
-                        },
-                        Run {
+                        }),
+                        ParagraphChild::Run(Run {
                             properties: RunProperties {
                                 bold: false,
                                 italic: false,
@@ -102,11 +102,11 @@ mod tests {
                             },
                             text: " Red!".to_string(),
                             space_preserve: false,
-                        },
+                        }),
                     ],
                 },
                 Paragraph {
-                    runs: vec![Run {
+                    children: vec![ParagraphChild::Run(Run {
                         properties: RunProperties {
                             bold: false,
                             italic: true,
@@ -122,7 +122,7 @@ mod tests {
                         },
                         text: "This is italic.".to_string(),
                         space_preserve: false,
-                    }],
+                    })],
                 },
             ],
         };
@@ -143,7 +143,6 @@ mod tests {
             load_result.err()
         );
         let loaded_doc = load_result.unwrap();
-        println!("{:#?}", loaded_doc);
 
         assert_eq!(
             original_doc, loaded_doc,

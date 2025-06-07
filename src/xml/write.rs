@@ -1,8 +1,10 @@
-use crate::elements::{Document, FontType, Paragraph, Run, RunProperties};
+use crate::elements::{
+    Document, FontType, Hyperlink, Paragraph, ParagraphChild, Run, RunProperties,
+};
 use crate::errors::RudocxError;
 
-use quick_xml::Writer;
 use quick_xml::events::BytesText;
+use quick_xml::Writer;
 use std::io::Cursor;
 
 type XmlWriter = Writer<Cursor<Vec<u8>>>;
@@ -10,18 +12,21 @@ type XmlResult = std::io::Result<()>;
 
 enum XmlNs {
     W,
+    R,
 }
 
 impl XmlNs {
     fn as_str(&self) -> &'static str {
         match self {
             XmlNs::W => "xmlns:w",
+            XmlNs::R => "xmlns:w",
         }
     }
 
     fn url(&self) -> &'static str {
         match self {
             XmlNs::W => "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+            XmlNs::R => "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
         }
     }
 }
@@ -30,6 +35,7 @@ enum XmlElement {
     Document,
     Body,
     Paragraph,
+    Hyperlink,
     Run,
     RunProps,
     Text,
@@ -52,6 +58,7 @@ impl XmlElement {
             XmlElement::Document => "w:document",
             XmlElement::Body => "w:body",
             XmlElement::Paragraph => "w:p",
+            XmlElement::Hyperlink => "w:hyperlink",
             XmlElement::Run => "w:r",
             XmlElement::RunProps => "w:rPr",
             XmlElement::Text => "w:t",
@@ -72,6 +79,7 @@ impl XmlElement {
 
 enum XmlAttr {
     Val,
+    Rid,
     Space,
 }
 
@@ -79,6 +87,7 @@ impl XmlAttr {
     fn as_str(&self) -> &'static str {
         match self {
             XmlAttr::Val => "w:val",
+            XmlAttr::Rid => "r:id",
             XmlAttr::Space => "xml:space",
         }
     }
@@ -125,11 +134,30 @@ fn write_body(writer: &mut XmlWriter, document: &Document) -> XmlResult {
 fn write_paragraph(writer: &mut XmlWriter, paragraph: &Paragraph) -> XmlResult {
     let element = writer.create_element(XmlElement::Paragraph.as_str());
     element.write_inner_content(|writer| {
-        for run in &paragraph.runs {
-            write_run(writer, run)?;
+        for child in &paragraph.children {
+            match child {
+                ParagraphChild::Run(run) => write_run(writer, run)?,
+                ParagraphChild::Hyperlink(hyperlink) => write_hyperlink(writer, hyperlink)?,
+            }
         }
         Ok(())
     })?;
+    Ok(())
+}
+
+fn write_hyperlink(writer: &mut XmlWriter, hyperlink: &Hyperlink) -> XmlResult {
+    let element = writer
+        .create_element(XmlElement::Hyperlink.as_str())
+        .with_attribute((
+            XmlAttr::Rid.as_str(),
+            XmlAttrValue::Custom(&hyperlink.id).as_str(),
+        ))
+        .write_inner_content(|writer| {
+            for run in &hyperlink.runs {
+                write_run(writer, run)?;
+            }
+            Ok(())
+        })?;
     Ok(())
 }
 
