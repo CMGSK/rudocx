@@ -19,7 +19,7 @@ impl XmlNs {
     fn as_str(&self) -> &'static str {
         match self {
             XmlNs::W => "xmlns:w",
-            XmlNs::R => "xmlns:w",
+            XmlNs::R => "xmlns:r",
         }
     }
 
@@ -113,6 +113,7 @@ pub fn generate(document: &Document) -> Result<String, RudocxError> {
     let element = writer.create_element(XmlElement::Document.as_str());
     element
         .with_attribute((XmlNs::W.as_str(), XmlNs::W.url()))
+        .with_attribute((XmlNs::R.as_str(), XmlNs::R.url()))
         .write_inner_content(|writer| write_body(writer, document))
         .map_err(|e| RudocxError::XmlError(e.into()))?;
 
@@ -146,7 +147,7 @@ fn write_paragraph(writer: &mut XmlWriter, paragraph: &Paragraph) -> XmlResult {
 }
 
 fn write_hyperlink(writer: &mut XmlWriter, hyperlink: &Hyperlink) -> XmlResult {
-    let element = writer
+    let _element = writer
         .create_element(XmlElement::Hyperlink.as_str())
         .with_attribute((
             XmlAttr::Rid.as_str(),

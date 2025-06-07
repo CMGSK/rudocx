@@ -662,7 +662,7 @@ mod tests {
                         <w:hyperlink r:id="rId1">
                             <w:r><w:rPr><w:i/></w:rPr><w:t>www.github.com/cmgsk/rudocx</w:t></w:r>
                         </w:hyperlink>
-                        <w:r><w:t>This was a link.</w:t></w:r>
+                        <w:r><w:t> That was hyperlink.</w:t></w:r>
                     </w:p>
                 </w:body>
             </w:document>
@@ -727,8 +727,10 @@ mod tests {
             }
         }
 
+        // Paragraph 3: Hyperlink and Plain
         assert_eq!(doc.paragraphs[3].children.len(), 2);
         if let Some(p) = doc.paragraphs.iter().nth(3) {
+            // Child 1 (hyperlink)
             if let Some(ParagraphChild::Hyperlink(h)) = p.children.iter().nth(0) {
                 assert_eq!(h.id, "rId1");
                 assert_eq!(h.runs.len(), 1);
@@ -738,8 +740,9 @@ mod tests {
             } else {
                 assert!(false);
             }
+            // Child 2 (run)
             if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(1) {
-                assert_eq!(r.text, "This was a link.");
+                assert_eq!(r.text, " That was hyperlink.");
                 assert!(!r.properties.bold);
                 assert!(!r.properties.italic);
             } else {

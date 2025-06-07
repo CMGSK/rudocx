@@ -1,6 +1,6 @@
 use crate::elements::*;
 use crate::errors::RudocxError;
-use crate::rels::bp;
+use crate::rels::{bp, generate_doc_rels};
 use crate::xml::*;
 
 use std::fs::File;
@@ -42,7 +42,7 @@ pub fn save<P: AsRef<Path>>(document: &Document, path: P) -> Result<(), RudocxEr
 
     // Ensure word/_rels directory exists implicitly via path
     zip.start_file("word/_rels/document.xml.rels", options)?;
-    zip.write_all(bp::DOC_RELS_XML_CONTENT.as_bytes())?;
+    zip.write_all(generate_doc_rels(&mut String::with_capacity(4096)).as_bytes())?;
 
     // Generate and write word/document.xml
     let document_xml = generate(document)?;
@@ -123,6 +123,18 @@ mod tests {
                         text: "This is italic.".to_string(),
                         space_preserve: false,
                     })],
+                },
+                Paragraph {
+                    children: vec![
+                        ParagraphChild::Hyperlink(Hyperlink::new(
+                            "https://github.com/cmgsk/rudocx",
+                        )),
+                        ParagraphChild::Run(Run {
+                            properties: RunProperties::default(),
+                            text: " That was hyperlink.".to_string(),
+                            space_preserve: false,
+                        }),
+                    ],
                 },
             ],
         };

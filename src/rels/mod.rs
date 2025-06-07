@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::sync::{Mutex, OnceLock};
 
 static RIDS: OnceLock<Mutex<u32>> = OnceLock::new();
 
 fn rids() -> &'static Mutex<u32> {
-    RIDS.get_or_init(|| Mutex::new(1))
+    RIDS.get_or_init(|| Mutex::new(0))
 }
 
 static LINKS: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
@@ -23,6 +24,25 @@ pub fn generate_rid(t: &str) -> String {
     links.insert(rid.clone(), t.to_string());
 
     rid
+}
+
+pub fn generate_doc_rels(xml: &mut String) -> &str {
+    xml.clear();
+    xml.push_str(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+    );
+
+    let links = links().lock().unwrap();
+    for (i, t) in links.iter() {
+        _ = write!(
+            xml,
+            r#"<Relationship Id="{i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{t}" TargetMode="External"/>"#
+        );
+    }
+
+    xml.push_str("</Relationships>");
+    xml.as_str()
 }
 
 pub mod bp {
