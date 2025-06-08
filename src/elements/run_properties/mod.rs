@@ -26,9 +26,13 @@ type Result<T> = std::result::Result<T, RudocxStyleError>;
 /// > - **size:** `Option<u32>` - Indicates the font size of a text in half points (e.g. `21` == `10.5 pt.`). `None` defaults to 22 (11pt). [`w:sz w:val="<NUM>"`]()
 /// > - **font:** `Option<FontSet>` - Indicates the `FontSet` of a text. For `None` and other details, please refere to: [FontSet](crate::properties::FontSet) [`w:rFonts[...]`]()
 /// > - **highlight:** `Option<HLColor>` - Indicates the highlighting `HLColor` of a text. `None` is unused. Only predefined colors are accepted. For custom coloring, `Shading` is used instead. [`w:highlight w:val="<COLOR>"`]()
-/// TODO: Add missing documentation here
+/// > - **strike:** `bool` - Indicates if the text is striked through [`w:strike`]()
+/// > - **dstrike:** `bool` - Indicates if the text is double striked through [`w:dstrike`]()
+/// > - **vailgn:** `Option<VerticalAlign>` - Indicates if the text is superscripted, underscripted or normal [`w:vertAlign` w:val="<VALUE>"]()
+/// > - **spacing:** `Option<u32>` - Indicates if the distance between characters. Measured in twentieths of a point (e.g. 15 = 0.75pt) [`w:spacing` w:val="<NUM>"]()
 ///
-/// Note: It's not in the scope right now to add direct support for `Cs` `TypeFont` properties such as szCs, bCs, etc.
+/// Note: It's not in the scope right now to add direct support for `Cs` `TypeFont` properties such as szCs, bCs, etc. It is in the scope to add new functionalities
+/// such as capitalization, outline, emboss, etc. but it is not yet supported.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RunProperties {
     pub bold: bool,

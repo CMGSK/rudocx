@@ -8,6 +8,7 @@ use quick_xml::Reader;
 struct CurrentData {
     document: Document,
     paragraph: Option<Paragraph>,
+    hyperlink: Option<Hyperlink>,
     run: Option<Run>,
     run_properties: Option<RunProperties>,
     in_run_properties: bool,
@@ -17,6 +18,7 @@ impl CurrentData {
         Self {
             document: Document::default(),
             paragraph: None,
+            hyperlink: None,
             run: None,
             run_properties: None,
             in_run_properties: false,
@@ -76,8 +78,8 @@ fn handle_text(data: &mut CurrentData, text: String) -> Result<(), RudocxError> 
 fn handle_open_tag(
     tag: &[u8],
     data: &mut CurrentData,
-    _attr: &mut Attributes,
-    _reader: &Reader<&[u8]>,
+    attr: &mut Attributes,
+    reader: &Reader<&[u8]>,
 ) -> Result<(), RudocxError> {
     match tag {
         //Plain text
@@ -97,12 +99,37 @@ fn handle_open_tag(
             data.paragraph = Some(Paragraph::default());
             Ok(())
         }
-
-        //Run
-        b"w:r" => {
+        //Hyperlink
+        b"w:hyperlink" => {
+            //Since hyperlinks are at the same level in the hierarchy as runs, if we
+            //encounter a run, we push it and take it out of current to start a hyperlink
+            //Hyperlinks cannot be inside hyperlinks.
             if let Some(r) = data.run.take() {
                 if let Some(ref mut p) = data.paragraph {
-                    p.runs.push(r);
+                    p.children.push(ParagraphChild::Run(r));
+                }
+            }
+            let mut link = Hyperlink::default();
+            if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"r:id") {
+                if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                    link.id = String::from(v.as_ref())
+                }
+            }
+            data.hyperlink = Some(link);
+            Ok(())
+        }
+        //Run
+        b"w:r" => {
+            //Check if we have to push to hyperlink or to paragraph
+            if let Some(ref mut h) = data.hyperlink {
+                if let Some(r) = data.run.take() {
+                    h.runs.push(r);
+                }
+            } else {
+                if let Some(r) = data.run.take() {
+                    if let Some(ref mut p) = data.paragraph {
+                        p.children.push(ParagraphChild::Run(r));
+                    }
                 }
             }
             data.run_properties = Some(RunProperties::default());
@@ -388,27 +415,53 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
         }
         //Paragraph
         b"w:p" => {
-            if let Some(p) = data.paragraph.take() {
-                if let Some(r) = data.run.take() {
-                    if let Some(mut p) = Some(p) {
-                        p.runs.push(r);
+            if let Some(mut p) = data.paragraph.take() {
+                if let Some(mut h) = data.hyperlink.take() {
+                    if let Some(r) = data.run.take() {
+                        h.runs.push(r);
+                    }
+                    p.children.push(ParagraphChild::Hyperlink(h));
+                    data.document.paragraphs.push(p);
+                } else {
+                    if let Some(r) = data.run.take() {
+                        p.children.push(ParagraphChild::Run(r));
+                        data.document.paragraphs.push(p);
+                    } else {
                         data.document.paragraphs.push(p);
                     }
-                } else {
-                    data.document.paragraphs.push(p);
                 }
             }
             data.paragraph = None;
             Ok(())
         }
+        //Hyperlink
+        b"w:hyperlink" => {
+            if let Some(mut h) = data.hyperlink.take() {
+                if let Some(mut r) = data.run.take() {
+                    if let Some(rp) = data.run_properties.take() {
+                        r.properties = rp;
+                    }
+                    h.runs.push(r);
+                }
+                if let Some(ref mut p) = data.paragraph {
+                    p.children.push(ParagraphChild::Hyperlink(h));
+                }
+            }
+            data.hyperlink = None;
+            Ok(())
+        }
         //Run
         b"w:r" => {
             if let Some(mut r) = data.run.take() {
-                if let Some(p) = data.run_properties.take() {
-                    r.properties = p;
+                if let Some(rp) = data.run_properties.take() {
+                    r.properties = rp;
                 }
-                if let Some(ref mut p) = data.paragraph {
-                    p.runs.push(r);
+                if let Some(ref mut h) = data.hyperlink {
+                    h.runs.push(r);
+                } else {
+                    if let Some(ref mut p) = data.paragraph {
+                        p.children.push(ParagraphChild::Run(r));
+                    }
                 }
             }
             data.run = None;
@@ -420,9 +473,17 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
 
 fn handle_eof(data: &mut CurrentData) -> Result<(), RudocxError> {
     if let Some(p) = data.paragraph.take() {
+        if let Some(mut h) = data.hyperlink.take() {
+            if let Some(mut p) = data.paragraph.take() {
+                if let Some(r) = data.run.take() {
+                    h.runs.push(r);
+                    p.children.push(ParagraphChild::Hyperlink(h));
+                }
+            }
+        }
         if let Some(r) = data.run.take() {
             if let Some(mut p) = Some(p) {
-                p.runs.push(r);
+                p.children.push(ParagraphChild::Run(r));
                 data.document.paragraphs.push(p);
             }
         } else {
@@ -460,7 +521,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                 b"w:r" => {
                     if let Some(r) = current_run.take() {
                         if let Some(ref mut p) = current_paragraph {
-                            p.runs.push(r);
+                            p.children.push(ParagraphChild::Run(r))
                         }
                     }
                     current_run_properties = Some(RunProperties::default());
@@ -486,14 +547,6 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                     if is_in_run_properties {
                         if let Some(ref mut props) = current_run_properties {
                             props.bold = true;
-                        }
-                    }
-                }
-                //Italics
-                b"w:i" => {
-                    if is_in_run_properties {
-                        if let Some(ref mut props) = current_run_properties {
-                            props.italic = true;
                         }
                     }
                 }
@@ -532,7 +585,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                     if let Some(p) = current_paragraph.take() {
                         if let Some(r) = current_run.take() {
                             if let Some(mut current_p) = Some(p) {
-                                current_p.runs.push(r);
+                                current_p.children.push(ParagraphChild::Run(r));
                                 document.paragraphs.push(current_p);
                             }
                         } else {
@@ -548,7 +601,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                             run.properties = props;
                         }
                         if let Some(ref mut p) = current_paragraph {
-                            p.runs.push(run);
+                            p.children.push(ParagraphChild::Run(run));
                         }
                     }
                     current_run = None;
@@ -566,7 +619,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
                 if let Some(p) = current_paragraph.take() {
                     if let Some(r) = current_run.take() {
                         if let Some(mut current_p) = Some(p) {
-                            current_p.runs.push(r);
+                            current_p.children.push(ParagraphChild::Run(r));
                             document.paragraphs.push(current_p);
                         }
                     } else {
@@ -588,6 +641,7 @@ pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
 mod tests {
     use super::*;
 
+    //TODO: Extend example XML to include current defined properties and structs
     #[test]
     fn test_parse_simple_doc() {
         let xml_input = r#"
@@ -604,6 +658,12 @@ mod tests {
                     <w:p>
                         <w:r><w:rPr><w:b/><w:i/></w:rPr><w:t>Bold and Italic.</w:t></w:r>
                     </w:p>
+                    <w:p>
+                        <w:hyperlink r:id="rId1">
+                            <w:r><w:rPr><w:i/></w:rPr><w:t>www.github.com/cmgsk/rudocx</w:t></w:r>
+                        </w:hyperlink>
+                        <w:r><w:t> That was hyperlink.</w:t></w:r>
+                    </w:p>
                 </w:body>
             </w:document>
         "#;
@@ -611,35 +671,83 @@ mod tests {
         let result = parse(xml_input);
         assert!(result.is_ok());
         let doc = result.unwrap();
-        println!("{:?}", doc);
 
-        assert_eq!(doc.paragraphs.len(), 3);
+        assert_eq!(doc.paragraphs.len(), 4);
 
         // Paragraph 1: Plain text
-        assert_eq!(doc.paragraphs[0].runs.len(), 1);
-        assert_eq!(doc.paragraphs[0].runs[0].text, "This is plain text.");
-        assert!(!doc.paragraphs[0].runs[0].properties.bold);
-        assert!(!doc.paragraphs[0].runs[0].properties.italic);
+        assert_eq!(doc.paragraphs[0].children.len(), 1);
+        if let Some(p) = doc.paragraphs.iter().nth(0) {
+            if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(0) {
+                assert_eq!(r.text, "This is plain text.");
+                assert!(!r.properties.bold);
+                assert!(!r.properties.italic);
+            } else {
+                assert!(false);
+            }
+        }
 
         // Paragraph 2: Bold, space, Italic
-        assert_eq!(doc.paragraphs[1].runs.len(), 3);
-        // Run 1: Bold
-        assert_eq!(doc.paragraphs[1].runs[0].text, "This is bold.");
-        assert!(doc.paragraphs[1].runs[0].properties.bold);
-        assert!(!doc.paragraphs[1].runs[0].properties.italic);
-        // Run 2: Space (should be preserved)
-        assert_eq!(doc.paragraphs[1].runs[1].text, " ");
-        assert!(!doc.paragraphs[1].runs[1].properties.bold);
-        assert!(!doc.paragraphs[1].runs[1].properties.italic);
-        // Run 3: Italic
-        assert_eq!(doc.paragraphs[1].runs[2].text, "This is italic.");
-        assert!(!doc.paragraphs[1].runs[2].properties.bold);
-        assert!(doc.paragraphs[1].runs[2].properties.italic);
+        assert_eq!(doc.paragraphs[1].children.len(), 3);
+        if let Some(p) = doc.paragraphs.iter().nth(1) {
+            // Run 1: Bold
+            if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(0) {
+                assert_eq!(r.text, "This is bold.");
+                assert!(r.properties.bold);
+                assert!(!r.properties.italic);
+            } else {
+                assert!(false);
+            }
+            // Run 2: Space (should be preserved)
+            if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(1) {
+                assert_eq!(r.text, " ");
+                assert!(!r.properties.bold);
+                assert!(!r.properties.italic);
+            } else {
+                assert!(false);
+            }
+            // Run 3: Italic
+            if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(2) {
+                assert_eq!(r.text, "This is italic.");
+                assert!(!r.properties.bold);
+                assert!(r.properties.italic);
+            } else {
+                assert!(false);
+            }
+        }
 
         // Paragraph 3: Bold and Italic
-        assert_eq!(doc.paragraphs[2].runs.len(), 1);
-        assert_eq!(doc.paragraphs[2].runs[0].text, "Bold and Italic.");
-        assert!(doc.paragraphs[2].runs[0].properties.bold);
-        assert!(doc.paragraphs[2].runs[0].properties.italic);
+        assert_eq!(doc.paragraphs[2].children.len(), 1);
+        if let Some(p) = doc.paragraphs.iter().nth(2) {
+            if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(0) {
+                assert_eq!(r.text, "Bold and Italic.");
+                assert!(r.properties.bold);
+                assert!(r.properties.italic);
+            } else {
+                assert!(false);
+            }
+        }
+
+        // Paragraph 3: Hyperlink and Plain
+        assert_eq!(doc.paragraphs[3].children.len(), 2);
+        if let Some(p) = doc.paragraphs.iter().nth(3) {
+            // Child 1 (hyperlink)
+            if let Some(ParagraphChild::Hyperlink(h)) = p.children.iter().nth(0) {
+                assert_eq!(h.id, "rId1");
+                assert_eq!(h.runs.len(), 1);
+                assert_eq!(h.runs[0].text, "www.github.com/cmgsk/rudocx");
+                assert!(!h.runs[0].properties.bold);
+                assert!(h.runs[0].properties.italic);
+            } else {
+                assert!(false);
+            }
+            // Child 2 (run)
+            if let Some(ParagraphChild::Run(r)) = p.children.iter().nth(1) {
+                assert_eq!(r.text, " That was hyperlink.");
+                assert!(!r.properties.bold);
+                assert!(!r.properties.italic);
+            } else {
+                assert!(false);
+            }
+        }
     }
 }
