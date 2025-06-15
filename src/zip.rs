@@ -1,6 +1,6 @@
 use crate::elements::*;
 use crate::errors::RudocxError;
-use crate::rels::bp;
+use crate::rels::{bp, generate_doc_rels};
 use crate::xml::*;
 
 use std::fs::File;
@@ -42,7 +42,7 @@ pub fn save<P: AsRef<Path>>(document: &Document, path: P) -> Result<(), RudocxEr
 
     // Ensure word/_rels directory exists implicitly via path
     zip.start_file("word/_rels/document.xml.rels", options)?;
-    zip.write_all(bp::DOC_RELS_XML_CONTENT.as_bytes())?;
+    zip.write_all(generate_doc_rels(&mut String::with_capacity(4096), &document.relationship_manager).as_bytes())?;
 
     // Generate and write word/document.xml
     let document_xml = generate(document)?;
@@ -60,16 +60,16 @@ mod tests {
 
     #[test]
     fn test_save_simple_doc() {
-        let original_doc = Document {
+        let mut original_doc = Document {
             paragraphs: vec![
                 Paragraph {
-                    runs: vec![
-                        Run {
+                    children: vec![
+                        ParagraphChild::Run(Run {
                             properties: RunProperties::default(),
                             text: "Hello ".to_string(),
                             space_preserve: false,
-                        },
-                        Run {
+                        }),
+                        ParagraphChild::Run(Run {
                             properties: RunProperties {
                                 bold: true,
                                 italic: false,
@@ -85,8 +85,8 @@ mod tests {
                             },
                             text: "World".to_string(),
                             space_preserve: false,
-                        },
-                        Run {
+                        }),
+                        ParagraphChild::Run(Run {
                             properties: RunProperties {
                                 bold: false,
                                 italic: false,
@@ -102,11 +102,11 @@ mod tests {
                             },
                             text: " Red!".to_string(),
                             space_preserve: false,
-                        },
+                        }),
                     ],
                 },
                 Paragraph {
-                    runs: vec![Run {
+                    children: vec![ParagraphChild::Run(Run {
                         properties: RunProperties {
                             bold: false,
                             italic: true,
@@ -122,10 +122,29 @@ mod tests {
                         },
                         text: "This is italic.".to_string(),
                         space_preserve: false,
-                    }],
+                    })],
                 },
             ],
+            relationship_manager: Default::default(),
         };
+
+        // Create the hyperlink using the document's relationship manager
+        let hyperlink = Hyperlink::new(
+            "https://github.com/cmgsk/rudocx",
+            &mut original_doc.relationship_manager,
+        );
+
+        // Add the paragraph with hyperlink
+        original_doc.paragraphs.push(Paragraph {
+            children: vec![
+                ParagraphChild::Hyperlink(hyperlink),
+                ParagraphChild::Run(Run {
+                    properties: RunProperties::default(),
+                    text: " That was hyperlink.".to_string(),
+                    space_preserve: false,
+                }),
+            ],
+        });
 
         let temp_file_path = std::env::temp_dir().join("rudocx_test_save.docx");
 
@@ -143,11 +162,12 @@ mod tests {
             load_result.err()
         );
         let loaded_doc = load_result.unwrap();
-        println!("{:#?}", loaded_doc);
 
+        // Compare the document structure (paragraphs) but not the relationship manager
+        // since the loaded document doesn't populate the relationship manager from XML
         assert_eq!(
-            original_doc, loaded_doc,
-            "Loaded document does not match original"
+            original_doc.paragraphs, loaded_doc.paragraphs,
+            "Loaded document paragraphs do not match original"
         );
 
         let _ = std::fs::remove_file(&temp_file_path);
