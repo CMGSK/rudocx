@@ -3,19 +3,19 @@ use std::fmt::Write;
 
 /// Manages relationships for a single document, ensuring thread-safety and preventing
 /// relationship ID collisions between different documents.
-/// 
+///
 /// This replaces the previous global state approach which could cause issues in
 /// multi-threaded environments or when processing multiple documents.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// use rudocx::rels::RelationshipManager;
-/// 
+///
 /// let mut manager = RelationshipManager::new();
 /// let rid = manager.generate_rid("https://example.com");
 /// assert_eq!(rid, "rId1");
-/// 
+///
 /// let links = manager.get_links();
 /// assert_eq!(links.get("rId1"), Some(&"https://example.com".to_string()));
 /// ```
@@ -127,10 +127,10 @@ mod tests {
     #[test]
     fn test_generate_rid() {
         let mut manager = RelationshipManager::new();
-        
+
         let rid1 = manager.generate_rid("https://example1.com");
         let rid2 = manager.generate_rid("https://example2.com");
-        
+
         assert_eq!(rid1, "rId1");
         assert_eq!(rid2, "rId2");
         assert_eq!(manager.get_links().len(), 2);
@@ -141,15 +141,15 @@ mod tests {
     #[test]
     fn test_clear() {
         let mut manager = RelationshipManager::new();
-        
+
         manager.generate_rid("https://example1.com");
         manager.generate_rid("https://example2.com");
         assert_eq!(manager.get_links().len(), 2);
-        
+
         manager.clear();
         assert_eq!(manager.counter, 0);
         assert_eq!(manager.get_links().len(), 0);
-        
+
         // After clearing, should start from rId1 again
         let rid = manager.generate_rid("https://example3.com");
         assert_eq!(rid, "rId1");
@@ -158,11 +158,11 @@ mod tests {
     #[test]
     fn test_add_relationship() {
         let mut manager = RelationshipManager::new();
-        
+
         manager.add_relationship("rId5".to_string(), "https://example.com".to_string());
         assert_eq!(manager.counter, 5);
         assert_eq!(manager.get_links().get("rId5"), Some(&"https://example.com".to_string()));
-        
+
         // Next generated ID should be rId6
         let next_rid = manager.generate_rid("https://example2.com");
         assert_eq!(next_rid, "rId6");
@@ -171,11 +171,11 @@ mod tests {
     #[test]
     fn test_add_relationship_non_standard_id() {
         let mut manager = RelationshipManager::new();
-        
+
         // Non-standard ID shouldn't affect counter
         manager.add_relationship("customId".to_string(), "https://example.com".to_string());
         assert_eq!(manager.counter, 0);
-        
+
         let next_rid = manager.generate_rid("https://example2.com");
         assert_eq!(next_rid, "rId1");
     }
@@ -185,10 +185,10 @@ mod tests {
         let mut manager = RelationshipManager::new();
         manager.generate_rid("https://example1.com");
         manager.generate_rid("https://example2.com");
-        
+
         let mut xml = String::new();
         let result = generate_doc_rels(&mut xml, &manager);
-        
+
         assert!(!result.is_empty());
         assert!(result.contains("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"));
         assert!(result.contains("xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\""));
@@ -204,7 +204,7 @@ mod tests {
         let manager = RelationshipManager::new();
         let mut xml = String::new();
         let result = generate_doc_rels(&mut xml, &manager);
-        
+
         assert!(!result.is_empty());
         assert!(result.contains("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"));
         assert!(result.contains("</Relationships>"));
