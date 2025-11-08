@@ -3,12 +3,14 @@ use std::default::Default;
 use crate::{elements::RunProperties, errors::RudocxParagraphStyleError};
 
 mod border;
+mod indentation;
 mod numbering;
 mod shadow;
 mod spacing;
 mod tabs;
 
 pub use border::*;
+pub use indentation::*;
 pub use numbering::*;
 pub use shadow::*;
 pub use spacing::*;

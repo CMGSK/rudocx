@@ -51,6 +51,8 @@ pub enum RudocxStyleError {
 
 #[derive(Error, Debug, Clone)]
 pub enum RudocxParagraphStyleError {
+    #[error("{0} and {1} are mutually exclusive")]
+    MutuallyExclusive(String, String),
     #[error("{0}")]
     Undefined(String),
 }
