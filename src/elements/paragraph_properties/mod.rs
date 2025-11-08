@@ -5,11 +5,13 @@ use crate::{elements::RunProperties, errors::RudocxParagraphStyleError};
 mod border;
 mod numbering;
 mod shadow;
+mod spacing;
 mod tabs;
 
 pub use border::*;
 pub use numbering::*;
 pub use shadow::*;
+pub use spacing::*;
 pub use tabs::*;
 
 type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
