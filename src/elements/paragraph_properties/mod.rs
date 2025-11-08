@@ -1,11 +1,14 @@
+use std::default::Default;
+
 use crate::{elements::RunProperties, errors::RudocxParagraphStyleError};
 
 mod border;
 mod shadow;
+mod tabs;
 
-use crate::elements::FontType::Default;
 pub use border::*;
 pub use shadow::*;
+pub use tabs::*;
 
 type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
 
