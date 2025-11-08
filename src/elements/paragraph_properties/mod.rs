@@ -11,6 +11,7 @@ mod numbering;
 mod shadow;
 mod spacing;
 mod tabs;
+mod textbox_tight_wrap;
 
 pub use alignment::*;
 pub use border::*;
@@ -21,6 +22,7 @@ pub use numbering::*;
 pub use shadow::*;
 pub use spacing::*;
 pub use tabs::*;
+pub use textbox_tight_wrap::*;
 
 type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
 
