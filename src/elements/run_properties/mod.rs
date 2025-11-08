@@ -1,11 +1,10 @@
+use crate::elements::{HLColor, HexColor};
 use crate::errors::RudocxStyleError;
 
-pub use color::*;
 pub use font::*;
 pub use underline::*;
 pub use vertical_align::*;
 
-mod color;
 mod font;
 mod underline;
 mod vertical_align;

@@ -41,6 +41,16 @@ pub enum RudocxStyleError {
     EmptyFontSet,
     #[error("Default font type is not modifiable. Fallbacks to Software/System/Language.")]
     DefaultHintIsUnmodifiable,
+    #[error("Invalid percentage: {0}. Must be a 0-100 value.")]
+    InvalidPercentage(u8),
+    #[error("{0}")]
+    WrongParagraphProperties(#[from] RudocxParagraphStyleError),
+    #[error("{0}")]
+    Undefined(String),
+}
+
+#[derive(Error, Debug, Clone)]
+pub enum RudocxParagraphStyleError {
     #[error("{0}")]
     Undefined(String),
 }

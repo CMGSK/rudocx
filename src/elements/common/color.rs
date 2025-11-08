@@ -146,3 +146,119 @@ impl fmt::Display for HighlightPalette {
         )
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PercentFill {
+    pub fill: String,
+}
+
+impl Default for PercentFill {
+    fn default() -> Self {
+        Self {
+            fill: String::from("pct100"),
+        }
+    }
+}
+
+impl PercentFill {
+    pub fn new(n: u8) -> Self {
+        if n > 100 {
+            return Self {
+                fill: String::from("pct100"),
+            };
+        }
+        Self {
+            fill: String::from(format!("pct{n}")),
+        }
+    }
+
+    pub fn value(&self) -> String {
+        self.fill.clone()
+    }
+
+    pub fn change_value(&mut self, n: u8) -> Result<()> {
+        if n > 100 {
+            return Err(RudocxStyleError::InvalidPercentage(n));
+        }
+        self.fill = String::from(format!("pct{n}"));
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct StripePattern {
+    pub pattern: StripePatternValues,
+}
+
+impl StripePattern {
+    pub fn new(pattern: StripePatternValues) -> Self {
+        Self { pattern }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StripePatternValues {
+    Horizontal,
+    Vertical,
+    Diagonal,
+    ReverseDiagonal,
+    HorizontalCross,
+    DiagonalCross,
+    ThinHorzontal,
+    ThinVertical,
+    ThinDiagonal,
+    ThinReverseDiagonal,
+    ThinHorizontalCross,
+    ThinDiagCross,
+    SmallGrid,
+    LargeGrid,
+    DottedGrid,
+}
+impl<T: Into<String>> From<T> for StripePatternValues {
+    fn from(value: T) -> Self {
+        match value.into().as_ref() {
+            "horzStripe" => Self::Horizontal,
+            "vertStripe" => Self::Vertical,
+            "diagStripe" => Self::Diagonal,
+            "reverseDiagStripe" => Self::ReverseDiagonal,
+            "horzCross" => Self::HorizontalCross,
+            "diagCross" => Self::DiagonalCross,
+            "thinHorzStripe" => Self::ThinHorzontal,
+            "thinVertStripe" => Self::ThinVertical,
+            "thinDiagStripe" => Self::ThinDiagonal,
+            "thinReverseDiagStripe" => Self::ThinReverseDiagonal,
+            "thinHorzCross" => Self::ThinHorizontalCross,
+            "thinDiagCross" => Self::ThinDiagCross,
+            "smGrid" => Self::SmallGrid,
+            "lgGrid" => Self::LargeGrid,
+            "dotGrid" => Self::DottedGrid,
+            _ => Self::Horizontal,
+        }
+    }
+}
+
+impl fmt::Display for StripePatternValues {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Horizontal => "horzStripe",
+                Self::Vertical => "vertStripe",
+                Self::Diagonal => "diagStripe",
+                Self::ReverseDiagonal => "reverseDiagStripe",
+                Self::HorizontalCross => "horzCrossStripe",
+                Self::DiagonalCross => "diagCrossStripe",
+                Self::ThinHorzontal => "thinHorzontalStripe",
+                Self::ThinVertical => "thinVertStripe",
+                Self::ThinDiagonal => "thinDiagStripe",
+                Self::ThinReverseDiagonal => "thinReverseDiagStripe",
+                Self::ThinHorizontalCross => "thinHorzCrossStripe",
+                Self::ThinDiagCross => "thinDiagCrossStripe",
+                Self::SmallGrid => "smGrid",
+                Self::LargeGrid => "lgGrid",
+                Self::DottedGrid => "dotGrid",
+            },
+        )
+    }
+}
