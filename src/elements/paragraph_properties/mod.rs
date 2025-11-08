@@ -2,6 +2,7 @@ use std::default::Default;
 
 use crate::{elements::RunProperties, errors::RudocxParagraphStyleError};
 
+mod alignment;
 mod border;
 mod direction;
 mod indentation;
@@ -11,6 +12,7 @@ mod shadow;
 mod spacing;
 mod tabs;
 
+pub use alignment::*;
 pub use border::*;
 pub use direction::*;
 pub use indentation::*;
