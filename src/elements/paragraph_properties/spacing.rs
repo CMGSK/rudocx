@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphSpacing {
     pub before: Option<u32>,
@@ -57,4 +59,14 @@ pub enum LineRule {
     Auto,
     AtLeast,
     Exact,
+}
+
+impl fmt::Display for LineRule {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LineRule::Auto => write!(f, "auto"),
+            LineRule::AtLeast => write!(f, "atLeast"),
+            LineRule::Exact => write!(f, "exact"),
+        }
+    }
 }

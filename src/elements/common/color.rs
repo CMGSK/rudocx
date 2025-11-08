@@ -185,6 +185,12 @@ impl PercentFill {
     }
 }
 
+impl fmt::Display for PercentFill {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.fill)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct StripePattern {
     pub pattern: StripePatternValues,
@@ -193,6 +199,12 @@ pub struct StripePattern {
 impl StripePattern {
     pub fn new(pattern: StripePatternValues) -> Self {
         Self { pattern }
+    }
+}
+
+impl fmt::Display for StripePattern {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.pattern)
     }
 }
 

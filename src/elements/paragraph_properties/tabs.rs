@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphTab {
     pub val: ParagraphTabValues,
@@ -35,6 +37,20 @@ pub enum ParagraphTabValues {
     Num,
 }
 
+impl fmt::Display for ParagraphTabValues {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParagraphTabValues::Clear => write!(f, "clear"),
+            ParagraphTabValues::Left => write!(f, "left"),
+            ParagraphTabValues::Center => write!(f, "center"),
+            ParagraphTabValues::Right => write!(f, "right"),
+            ParagraphTabValues::Decimal => write!(f, "decimal"),
+            ParagraphTabValues::Bar => write!(f, "bar"),
+            ParagraphTabValues::Num => write!(f, "num"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParagraphTabLeaders {
     None,
@@ -42,4 +58,16 @@ pub enum ParagraphTabLeaders {
     Heavy,
     Hyphen,
     MiddleDot,
+}
+
+impl fmt::Display for ParagraphTabLeaders {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParagraphTabLeaders::None => write!(f, "none"),
+            ParagraphTabLeaders::Dot => write!(f, "dot"),
+            ParagraphTabLeaders::Heavy => write!(f, "heavy"),
+            ParagraphTabLeaders::Hyphen => write!(f, "hyphen"),
+            ParagraphTabLeaders::MiddleDot => write!(f, "middleDot"),
+        }
+    }
 }

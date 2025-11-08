@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::elements::HexColor;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -54,6 +56,17 @@ pub enum ParagraphBorderStyle {
     Dashed,
     Nil,
     // Note: None is defined by the None value of the Option containing this enum
+}
+
+impl fmt::Display for ParagraphBorderStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParagraphBorderStyle::Single => write!(f, "single"),
+            ParagraphBorderStyle::Double => write!(f, "double"),
+            ParagraphBorderStyle::Dashed => write!(f, "dashed"),
+            ParagraphBorderStyle::Nil => write!(f, "nil"),
+        }
+    }
 }
 
 impl Default for ParagraphBorderSide {
