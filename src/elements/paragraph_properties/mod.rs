@@ -28,7 +28,7 @@ type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
 
 //TODO: Documentation
 ///We're currently missing: Style, framePr, Kinsoku, overflow punctuation, divId, cnfStyle
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct ParagraphProperties {
     pub keep_next: bool,
     pub keep_lines: bool,
@@ -57,12 +57,4 @@ pub struct ParagraphProperties {
     pub textbox_tight_wrap: Option<ParagraphTBoxTightWrap>,
     pub outline_level: Option<u8>,
     pub default_run_properties: Option<RunProperties>,
-}
-
-impl Default for ParagraphProperties {
-    fn default() -> Self {
-        Self {
-            ..Default::default()
-        }
-    }
 }

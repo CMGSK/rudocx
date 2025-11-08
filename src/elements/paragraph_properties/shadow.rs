@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::elements::{HexColor, PercentFill, StripePattern};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,4 +54,15 @@ pub enum ParagraphShadowValues {
     Percentage(PercentFill),
     Pattern(StripePattern),
     Nil,
+}
+
+impl fmt::Display for ParagraphShadowValues {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParagraphShadowValues::Clear => write!(f, "clear"),
+            ParagraphShadowValues::Percentage(v) => write!(f, "{}", v),
+            ParagraphShadowValues::Pattern(v) => write!(f, "{}", v),
+            ParagraphShadowValues::Nil => write!(f, "nil"),
+        }
+    }
 }
