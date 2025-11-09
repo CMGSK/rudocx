@@ -1,6 +1,6 @@
 use std::default::Default;
 
-use crate::{elements::RunProperties, errors::RudocxParagraphStyleError};
+use crate::elements::RunProperties;
 
 mod alignment;
 mod border;
@@ -68,13 +68,9 @@ pub struct ParagraphProperties {
     pub page_break_before: bool,
     pub window_control: bool,
     pub supress_line_numbers: bool,
-    /// Contains top, bottom, left, right, between, and bar border definitions
     pub borders: Option<ParagraphBorder>,
-    /// Contains fill color, pattern, and background color for paragraph shading
     pub shading: Option<ParagraphShading>,
-    /// Contains a collection of custom tab stop positions and alignments
     pub tabs: Option<ParagraphTab>,
-    /// Contains numbering level (ilvl) and numbering definition ID (numId)
     pub numbering_properties: Option<ParagraphNumberingProperties>,
     pub suppress_auto_hyphens: bool,
     pub word_wrap: bool,
@@ -83,22 +79,15 @@ pub struct ParagraphProperties {
     pub autospace_dn: bool,
     pub bidi: bool,
     pub snap_to_grid: bool,
-    /// Contains before/after spacing, line spacing rule, and line spacing value
     pub spacing: Option<ParagraphSpacing>,
-    /// Contains left, right, first line, and hanging indentation values
     pub ind: Option<ParagraphIndentation>,
     pub contextual_spacing: bool,
     pub mirror_indents: bool,
     pub suppress_overlap: bool,
-    /// Contains alignment value: left, center, right, both (justified), distribute, etc.
     pub jc: Option<ParagraphJustification>,
-    /// Contains text flow direction: lr-tb, tb-rl, bt-lr, lr-tb-v, tb-rl-v, tb-lr-v
     pub text_direction: Option<ParagraphTextDir>,
-    /// Contains vertical alignment on line: top, center, baseline, bottom, auto
     pub text_alignment: Option<ParagraphTextAlign>,
-    /// Contains tight wrap setting for text boxes: none, allLines, firstAndLastLine, firstLineOnly, lastLineOnly
     pub textbox_tight_wrap: Option<ParagraphTBoxTightWrap>,
     pub outline_level: Option<u8>,
-    /// Contains default text formatting (bold, italic, font, etc.) for all runs in this paragraph
     pub default_run_properties: Option<RunProperties>,
 }

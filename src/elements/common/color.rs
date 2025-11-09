@@ -1,6 +1,6 @@
 // --- Colors ---
 
-use crate::errors::{RudocxError, RudocxStyleError};
+use crate::errors::RudocxStyleError;
 use std::fmt;
 use std::fmt::Formatter;
 

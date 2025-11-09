@@ -29,7 +29,7 @@ impl Default for ParagraphShading {
 }
 
 impl ParagraphShading {
-    fn new(val: ParagraphShadingValues, fill: HexColor, color: HexColor) -> Self {
+    pub fn new(val: ParagraphShadingValues, fill: HexColor, color: HexColor) -> Self {
         Self {
             val,
             fill: Some(fill),
