@@ -1,6 +1,6 @@
 // --- Colors ---
 
-use crate::errors::RudocxStyleError;
+use crate::errors::{RudocxError, RudocxStyleError};
 use std::fmt;
 use std::fmt::Formatter;
 
@@ -225,7 +225,9 @@ pub enum StripePatternValues {
     SmallGrid,
     LargeGrid,
     DottedGrid,
+    Clear,
 }
+
 impl<T: Into<String>> From<T> for StripePatternValues {
     fn from(value: T) -> Self {
         match value.into().as_ref() {
@@ -244,7 +246,8 @@ impl<T: Into<String>> From<T> for StripePatternValues {
             "smGrid" => Self::SmallGrid,
             "lgGrid" => Self::LargeGrid,
             "dotGrid" => Self::DottedGrid,
-            _ => Self::Horizontal,
+            "clear" => Self::Clear,
+            _ => Self::Clear,
         }
     }
 }
@@ -270,6 +273,7 @@ impl fmt::Display for StripePatternValues {
                 Self::SmallGrid => "smGrid",
                 Self::LargeGrid => "lgGrid",
                 Self::DottedGrid => "dotGrid",
+                Self::Clear => "clear",
             },
         )
     }

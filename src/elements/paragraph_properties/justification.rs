@@ -50,3 +50,21 @@ impl fmt::Display for ParagraphJustificationValues {
         }
     }
 }
+
+impl<T: Into<String>> From<T> for ParagraphJustificationValues {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "left" => ParagraphJustificationValues::Left,
+            "center" => ParagraphJustificationValues::Center,
+            "right" => ParagraphJustificationValues::Right,
+            "both" => ParagraphJustificationValues::Both,
+            "mediumKashida" => ParagraphJustificationValues::MediumKashida,
+            "distributedKashida" => ParagraphJustificationValues::DistributedKashida,
+            "numTab" => ParagraphJustificationValues::NumTab,
+            "highKashida" => ParagraphJustificationValues::HighKashida,
+            "lowKashida" => ParagraphJustificationValues::LowKashida,
+            "thaiDistributed" => ParagraphJustificationValues::ThaiDistributed,
+            _ => ParagraphJustificationValues::Left,
+        }
+    }
+}

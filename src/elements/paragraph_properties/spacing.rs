@@ -71,3 +71,14 @@ impl fmt::Display for LineRule {
         }
     }
 }
+
+impl<T: Into<String>> From<T> for LineRule {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "auto" => LineRule::Auto,
+            "atLeast" => LineRule::AtLeast,
+            "exact" => LineRule::Exact,
+            _ => LineRule::Auto,
+        }
+    }
+}

@@ -52,6 +52,21 @@ impl fmt::Display for ParagraphTabValues {
     }
 }
 
+impl<T: Into<String>> From<T> for ParagraphTabValues {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "clear" => ParagraphTabValues::Clear,
+            "left" => ParagraphTabValues::Left,
+            "center" => ParagraphTabValues::Center,
+            "right" => ParagraphTabValues::Right,
+            "decimal" => ParagraphTabValues::Decimal,
+            "bar" => ParagraphTabValues::Bar,
+            "num" => ParagraphTabValues::Num,
+            _ => ParagraphTabValues::Clear,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParagraphTabLeaders {
     None,
@@ -69,6 +84,19 @@ impl fmt::Display for ParagraphTabLeaders {
             ParagraphTabLeaders::Heavy => write!(f, "heavy"),
             ParagraphTabLeaders::Hyphen => write!(f, "hyphen"),
             ParagraphTabLeaders::MiddleDot => write!(f, "middleDot"),
+        }
+    }
+}
+
+impl<T: Into<String>> From<T> for ParagraphTabLeaders {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "none" => ParagraphTabLeaders::None,
+            "dot" => ParagraphTabLeaders::Dot,
+            "heavy" => ParagraphTabLeaders::Heavy,
+            "hyphen" => ParagraphTabLeaders::Hyphen,
+            "middleDot" => ParagraphTabLeaders::MiddleDot,
+            _ => ParagraphTabLeaders::None,
         }
     }
 }

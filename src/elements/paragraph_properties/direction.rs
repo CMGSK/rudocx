@@ -44,3 +44,18 @@ impl fmt::Display for ParagraphTextDirValues {
         }
     }
 }
+
+impl<T: Into<String>> From<T> for ParagraphTextDirValues {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "lrTb" => ParagraphTextDirValues::LrTb,
+            "TbRlTbLr" => ParagraphTextDirValues::TbRlTbLr,
+            "brLr" => ParagraphTextDirValues::BtLr,
+            "tbLrTbRl" => ParagraphTextDirValues::TbLrTbRl,
+            "tbRl" => ParagraphTextDirValues::TbRl,
+            "lr" => ParagraphTextDirValues::Lr,
+            "lrTbBidi" => ParagraphTextDirValues::LrTbBidi,
+            _ => ParagraphTextDirValues::LrTb,
+        }
+    }
+}

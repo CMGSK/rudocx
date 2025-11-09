@@ -40,3 +40,16 @@ impl fmt::Display for ParagraphTBoxTightWrapValues {
         }
     }
 }
+
+impl<T: Into<String>> From<T> for ParagraphTBoxTightWrapValues {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "allLines" => ParagraphTBoxTightWrapValues::AllLines,
+            "firstAndLastLine" => ParagraphTBoxTightWrapValues::FirstAndLastLine,
+            "firstLineOnly" => ParagraphTBoxTightWrapValues::FirstLineOnly,
+            "lastLineOnly" => ParagraphTBoxTightWrapValues::LastLineOnly,
+            "none" => ParagraphTBoxTightWrapValues::None,
+            _ => ParagraphTBoxTightWrapValues::None,
+        }
+    }
+}

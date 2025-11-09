@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::elements::{HexColor, PercentFill, StripePattern};
+use crate::{
+    elements::{HexColor, PercentFill, StripePattern},
+    errors::RudocxParagraphStyleError,
+};
 
 /// Contains fill color, pattern, and background color for paragraph shading
 #[derive(Debug, Clone, PartialEq)]
@@ -64,6 +67,27 @@ impl fmt::Display for ParagraphShadingValues {
             ParagraphShadingValues::Percentage(v) => write!(f, "{}", v),
             ParagraphShadingValues::Pattern(v) => write!(f, "{}", v),
             ParagraphShadingValues::Nil => write!(f, "nil"),
+        }
+    }
+}
+
+impl TryFrom<String> for ParagraphShadingValues {
+    type Error = RudocxParagraphStyleError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "clear" => Ok(ParagraphShadingValues::Clear),
+            "nil" => Ok(ParagraphShadingValues::Nil),
+            s if s.starts_with("pct") => {
+                if let Ok(pct) = s[3..].parse::<u8>() {
+                    Ok(ParagraphShadingValues::Percentage(PercentFill::new(pct)))
+                } else {
+                    Err(RudocxParagraphStyleError::InvalidShading(s.to_string()))
+                }
+            }
+            s => Ok(ParagraphShadingValues::Pattern(StripePattern::new(
+                s.into(),
+            ))),
         }
     }
 }

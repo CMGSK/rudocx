@@ -70,6 +70,18 @@ impl fmt::Display for ParagraphBorderStyle {
     }
 }
 
+impl<T: Into<String>> From<T> for ParagraphBorderStyle {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "single" => ParagraphBorderStyle::Single,
+            "double" => ParagraphBorderStyle::Double,
+            "dashed" => ParagraphBorderStyle::Dashed,
+            "nil" => ParagraphBorderStyle::Nil,
+            _ => ParagraphBorderStyle::Nil,
+        }
+    }
+}
+
 impl Default for ParagraphBorderSide {
     fn default() -> Self {
         Self {

@@ -40,3 +40,16 @@ impl fmt::Display for ParagraphTextAlignValues {
         }
     }
 }
+
+impl<T: Into<String>> From<T> for ParagraphTextAlignValues {
+    fn from(v: T) -> Self {
+        match v.into().as_ref() {
+            "top" => ParagraphTextAlignValues::Top,
+            "center" => ParagraphTextAlignValues::Center,
+            "baseline" => ParagraphTextAlignValues::Baseline,
+            "bottom" => ParagraphTextAlignValues::Bottom,
+            "auto" => ParagraphTextAlignValues::Auto,
+            _ => ParagraphTextAlignValues::Auto,
+        }
+    }
+}

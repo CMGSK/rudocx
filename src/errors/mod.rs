@@ -53,6 +53,8 @@ pub enum RudocxStyleError {
 pub enum RudocxParagraphStyleError {
     #[error("{0} and {1} are mutually exclusive")]
     MutuallyExclusive(String, String),
+    #[error("{0} could not be converted into a valid shading struct")]
+    InvalidShading(String),
     #[error("{0}")]
     Undefined(String),
 }
