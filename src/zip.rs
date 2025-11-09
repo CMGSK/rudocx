@@ -42,7 +42,13 @@ pub fn save<P: AsRef<Path>>(document: &Document, path: P) -> Result<(), RudocxEr
 
     // Ensure word/_rels directory exists implicitly via path
     zip.start_file("word/_rels/document.xml.rels", options)?;
-    zip.write_all(generate_doc_rels(&mut String::with_capacity(4096), &document.relationship_manager).as_bytes())?;
+    zip.write_all(
+        generate_doc_rels(
+            &mut String::with_capacity(4096),
+            &document.relationship_manager,
+        )
+        .as_bytes(),
+    )?;
 
     // Generate and write word/document.xml
     let document_xml = generate(document)?;
@@ -104,6 +110,7 @@ mod tests {
                             space_preserve: false,
                         }),
                     ],
+                    ..Default::default()
                 },
                 Paragraph {
                     children: vec![ParagraphChild::Run(Run {
@@ -123,6 +130,7 @@ mod tests {
                         text: "This is italic.".to_string(),
                         space_preserve: false,
                     })],
+                    ..Default::default()
                 },
             ],
             relationship_manager: Default::default(),
@@ -144,6 +152,7 @@ mod tests {
                     space_preserve: false,
                 }),
             ],
+            ..Default::default()
         });
 
         let temp_file_path = std::env::temp_dir().join("rudocx_test_save.docx");

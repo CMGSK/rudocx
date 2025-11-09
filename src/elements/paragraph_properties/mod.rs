@@ -24,8 +24,6 @@ pub use spacing::*;
 pub use tabs::*;
 pub use textbox_tight_wrap::*;
 
-type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
-
 //TODO: Documentation
 ///We're currently missing: Style, framePr, Kinsoku, overflow punctuation, divId, cnfStyle
 #[derive(Debug, Clone, PartialEq, Default)]
