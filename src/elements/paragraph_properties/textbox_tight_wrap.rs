@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Contains tight wrap setting for text boxes: none, allLines, firstAndLastLine, firstLineOnly, lastLineOnly
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphTBoxTightWrap {
     pub val: ParagraphTBoxTightWrapValues,

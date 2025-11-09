@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Contains before/after spacing, line spacing rule, and line spacing value
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphSpacing {
     pub before: Option<u32>,

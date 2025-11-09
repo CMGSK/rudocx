@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Contains vertical alignment on line: top, center, baseline, bottom, auto
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphTextAlign {
     pub val: ParagraphTextAlignValues,

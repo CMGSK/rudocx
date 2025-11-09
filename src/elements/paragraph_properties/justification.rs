@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Contains alignment value: left, center, right, both (justified), distribute, etc.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphJustification {
     pub val: ParagraphJustificationValues,

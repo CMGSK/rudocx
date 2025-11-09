@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Contains a collection of custom tab stop positions and alignments
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphTab {
     pub val: ParagraphTabValues,

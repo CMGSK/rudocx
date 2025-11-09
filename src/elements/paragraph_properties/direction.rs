@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Contains text flow direction: lr-tb, tb-rl, bt-lr, lr-tb-v, tb-rl-v, tb-lr-v
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphTextDir {
     pub val: ParagraphTextDirValues,

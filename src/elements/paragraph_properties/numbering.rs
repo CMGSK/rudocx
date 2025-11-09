@@ -1,3 +1,5 @@
+/// Contains numbering level (ilvl) and numbering definition ID (numId)
+///
 /// Technically, ilvl is unbounded but it's typically a 0-8 value. Also, num_id is a reference into
 /// the document's `numbering.xml` file. Both fields are by themselves a tag with an only attribute
 /// called `w:val`

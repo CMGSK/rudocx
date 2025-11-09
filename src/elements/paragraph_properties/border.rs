@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::elements::HexColor;
 
+/// Contains top, bottom, left, right, between, and bar border definitions
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphBorder {
     pub top: Option<ParagraphBorderSide>,

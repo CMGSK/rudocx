@@ -2,9 +2,10 @@ use std::fmt;
 
 use crate::elements::{HexColor, PercentFill, StripePattern};
 
+/// Contains fill color, pattern, and background color for paragraph shading
 #[derive(Debug, Clone, PartialEq)]
-pub struct ParagraphShadow {
-    pub val: ParagraphShadowValues,
+pub struct ParagraphShading {
+    pub val: ParagraphShadingValues,
     pub fill: Option<HexColor>,
     pub color: Option<HexColor>, // ignored for Clear
     //TODO: To be implemented
@@ -12,10 +13,10 @@ pub struct ParagraphShadow {
     _theme_fill: Option<String>,
 }
 
-impl Default for ParagraphShadow {
+impl Default for ParagraphShading {
     fn default() -> Self {
         Self {
-            val: ParagraphShadowValues::Clear,
+            val: ParagraphShadingValues::Clear,
             fill: Some(HexColor::new("FFF700")), // Yellow
             color: None,
             _theme_color: None,
@@ -24,8 +25,8 @@ impl Default for ParagraphShadow {
     }
 }
 
-impl ParagraphShadow {
-    fn new(val: ParagraphShadowValues, fill: HexColor, color: HexColor) -> Self {
+impl ParagraphShading {
+    fn new(val: ParagraphShadingValues, fill: HexColor, color: HexColor) -> Self {
         Self {
             val,
             fill: Some(fill),
@@ -35,7 +36,7 @@ impl ParagraphShadow {
         }
     }
 
-    pub fn change_value(&mut self, val: ParagraphShadowValues) {
+    pub fn change_value(&mut self, val: ParagraphShadingValues) {
         self.val = val;
     }
 
@@ -49,20 +50,20 @@ impl ParagraphShadow {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ParagraphShadowValues {
+pub enum ParagraphShadingValues {
     Clear, // Solid color
     Percentage(PercentFill),
     Pattern(StripePattern),
     Nil,
 }
 
-impl fmt::Display for ParagraphShadowValues {
+impl fmt::Display for ParagraphShadingValues {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParagraphShadowValues::Clear => write!(f, "clear"),
-            ParagraphShadowValues::Percentage(v) => write!(f, "{}", v),
-            ParagraphShadowValues::Pattern(v) => write!(f, "{}", v),
-            ParagraphShadowValues::Nil => write!(f, "nil"),
+            ParagraphShadingValues::Clear => write!(f, "clear"),
+            ParagraphShadingValues::Percentage(v) => write!(f, "{}", v),
+            ParagraphShadingValues::Pattern(v) => write!(f, "{}", v),
+            ParagraphShadingValues::Nil => write!(f, "nil"),
         }
     }
 }

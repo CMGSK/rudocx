@@ -2,6 +2,7 @@ use crate::errors::RudocxParagraphStyleError;
 
 type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
 
+/// Contains left, right, first line, and hanging indentation values
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphIndentation {
     pub left: Option<i32>,
