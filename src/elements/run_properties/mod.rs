@@ -32,7 +32,7 @@ type Result<T> = std::result::Result<T, RudocxStyleError>;
 ///
 /// Note: It's not in the scope right now to add direct support for `Cs` `TypeFont` properties such as szCs, bCs, etc. It is in the scope to add new functionalities
 /// such as capitalization, outline, emboss, etc. but it is not yet supported.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct RunProperties {
     pub bold: bool,
     pub italic: bool,
@@ -48,24 +48,7 @@ pub struct RunProperties {
 }
 
 //TODO: Change all constructors to accept T: Into<String> as in UnderlineStyle
-
-impl Default for RunProperties {
-    fn default() -> Self {
-        Self {
-            bold: false,
-            italic: false,
-            underline: None,
-            color: None,
-            size: None,
-            font: None,
-            highlight: None,
-            strike: false,
-            dstrike: false,
-            valign: None,
-            spacing: None,
-        }
-    }
-}
+//TODO: Change new for a builder pattern
 
 impl RunProperties {
     pub fn new(

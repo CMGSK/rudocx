@@ -91,3 +91,161 @@ pub struct ParagraphProperties {
     pub outline_level: Option<u8>,
     pub default_run_properties: Option<RunProperties>,
 }
+
+impl ParagraphProperties {
+    pub fn builder() -> ParagraphPropertiesBuilder {
+        ParagraphPropertiesBuilder::new()
+    }
+}
+
+pub struct ParagraphPropertiesBuilder {
+    inner: ParagraphProperties,
+}
+
+impl ParagraphPropertiesBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: ParagraphProperties::default(),
+        }
+    }
+
+    pub fn build(self) -> ParagraphProperties {
+        self.inner
+    }
+
+    // Builder methods for all properties.
+    pub fn keep_next(mut self, v: bool) -> Self {
+        self.inner.keep_next = v;
+        self
+    }
+
+    pub fn keep_lines(mut self, v: bool) -> Self {
+        self.inner.keep_lines = v;
+        self
+    }
+
+    pub fn page_break_before(mut self, v: bool) -> Self {
+        self.inner.page_break_before = v;
+        self
+    }
+
+    pub fn window_control(mut self, v: bool) -> Self {
+        self.inner.window_control = v;
+        self
+    }
+
+    pub fn supress_line_numbers(mut self, v: bool) -> Self {
+        self.inner.supress_line_numbers = v;
+        self
+    }
+
+    pub fn borders(mut self, v: Option<ParagraphBorder>) -> Self {
+        self.inner.borders = v;
+        self
+    }
+
+    pub fn shading(mut self, v: Option<ParagraphShading>) -> Self {
+        self.inner.shading = v;
+        self
+    }
+
+    pub fn tabs(mut self, v: Option<ParagraphTab>) -> Self {
+        self.inner.tabs = v;
+        self
+    }
+
+    pub fn numbering_properties(mut self, v: Option<ParagraphNumberingProperties>) -> Self {
+        self.inner.numbering_properties = v;
+        self
+    }
+
+    pub fn suppress_auto_hyphens(mut self, v: bool) -> Self {
+        self.inner.suppress_auto_hyphens = v;
+        self
+    }
+
+    pub fn word_wrap(mut self, v: bool) -> Self {
+        self.inner.word_wrap = v;
+        self
+    }
+
+    pub fn topline_punct(mut self, v: bool) -> Self {
+        self.inner.topline_punct = v;
+        self
+    }
+
+    pub fn autospace_de(mut self, v: bool) -> Self {
+        self.inner.autospace_de = v;
+        self
+    }
+
+    pub fn autospace_dn(mut self, v: bool) -> Self {
+        self.inner.autospace_dn = v;
+        self
+    }
+
+    pub fn bidi(mut self, v: bool) -> Self {
+        self.inner.bidi = v;
+        self
+    }
+
+    pub fn snap_to_grid(mut self, v: bool) -> Self {
+        self.inner.snap_to_grid = v;
+        self
+    }
+
+    pub fn spacing(mut self, v: Option<ParagraphSpacing>) -> Self {
+        self.inner.spacing = v;
+        self
+    }
+
+    pub fn ind(mut self, v: Option<ParagraphIndentation>) -> Self {
+        self.inner.ind = v;
+        self
+    }
+
+    pub fn contextual_spacing(mut self, v: bool) -> Self {
+        self.inner.contextual_spacing = v;
+        self
+    }
+
+    pub fn mirror_indents(mut self, v: bool) -> Self {
+        self.inner.mirror_indents = v;
+        self
+    }
+
+    pub fn suppress_overlap(mut self, v: bool) -> Self {
+        self.inner.suppress_overlap = v;
+        self
+    }
+
+    pub fn jc(mut self, v: Option<ParagraphJustification>) -> Self {
+        self.inner.jc = v;
+        self
+    }
+
+    pub fn text_direction(mut self, v: Option<ParagraphTextDir>) -> Self {
+        self.inner.text_direction = v;
+        self
+    }
+
+    pub fn text_alignment(mut self, v: Option<ParagraphTextAlign>) -> Self {
+        self.inner.text_alignment = v;
+        self
+    }
+
+    pub fn textbox_tight_wrap(mut self, v: Option<ParagraphTBoxTightWrap>) -> Self {
+        self.inner.textbox_tight_wrap = v;
+        self
+    }
+
+    pub fn outline_level(mut self, v: Option<u8>) -> Self {
+        self.inner.outline_level = v;
+        self
+    }
+
+    pub fn default_run_properties(mut self, v: Option<RunProperties>) -> Self {
+        self.inner.default_run_properties = v;
+        self
+    }
+}
