@@ -39,6 +39,10 @@ impl ParagraphShading {
         }
     }
 
+    pub fn value(&self) -> String {
+        self.val.to_string()
+    }
+
     pub fn change_value(&mut self, val: ParagraphShadingValues) {
         self.val = val;
     }

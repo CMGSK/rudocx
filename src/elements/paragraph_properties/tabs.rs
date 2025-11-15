@@ -14,6 +14,10 @@ impl ParagraphTab {
         Self { val, pos, leader }
     }
 
+    pub fn value(&self) -> String {
+        self.val.to_string()
+    }
+
     pub fn change_value(&mut self, val: ParagraphTabValues) {
         self.val = val;
     }

@@ -42,9 +42,10 @@ impl ParagraphBorder {
     }
 }
 
+//TODO: Implement shadow, frame, and themed attributes
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParagraphBorderSide {
-    pub val: Option<ParagraphBorderStyle>,
+    pub val: ParagraphBorderStyle,
     pub sz: Option<u8>,
     pub space: Option<u8>,
     pub color: Option<HexColor>,
@@ -85,7 +86,7 @@ impl<T: Into<String>> From<T> for ParagraphBorderStyle {
 impl Default for ParagraphBorderSide {
     fn default() -> Self {
         Self {
-            val: Some(ParagraphBorderStyle::Single),
+            val: ParagraphBorderStyle::Single,
             sz: Some(4),
             space: None,
             color: Some(HexColor::new("FFFFFF")),
@@ -95,7 +96,7 @@ impl Default for ParagraphBorderSide {
 
 impl ParagraphBorderSide {
     pub fn new(
-        val: Option<ParagraphBorderStyle>,
+        val: ParagraphBorderStyle,
         sz: Option<u8>,
         space: Option<u8>,
         color: Option<HexColor>,

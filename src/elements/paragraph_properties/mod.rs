@@ -8,7 +8,7 @@ mod direction;
 mod indentation;
 mod justification;
 mod numbering;
-mod shadow;
+mod shading;
 mod spacing;
 mod tabs;
 mod textbox_tight_wrap;
@@ -19,7 +19,7 @@ pub use direction::*;
 pub use indentation::*;
 pub use justification::*;
 pub use numbering::*;
-pub use shadow::*;
+pub use shading::*;
 pub use spacing::*;
 pub use tabs::*;
 pub use textbox_tight_wrap::*;
@@ -67,10 +67,10 @@ pub struct ParagraphProperties {
     pub keep_lines: bool,
     pub page_break_before: bool,
     pub window_control: bool,
-    pub supress_line_numbers: bool,
-    pub borders: Option<ParagraphBorder>,
+    pub suppress_line_numbers: bool,
+    pub paragraph_borders: Option<ParagraphBorder>,
     pub shading: Option<ParagraphShading>,
-    pub tabs: Option<ParagraphTab>,
+    pub tabs: Option<Vec<ParagraphTab>>,
     pub numbering_properties: Option<ParagraphNumberingProperties>,
     pub suppress_auto_hyphens: bool,
     pub word_wrap: bool,
@@ -95,6 +95,10 @@ pub struct ParagraphProperties {
 impl ParagraphProperties {
     pub fn builder() -> ParagraphPropertiesBuilder {
         ParagraphPropertiesBuilder::new()
+    }
+
+    pub fn has_formatting(&self) -> bool {
+        self != &Self::default()
     }
 }
 
@@ -135,12 +139,12 @@ impl ParagraphPropertiesBuilder {
     }
 
     pub fn supress_line_numbers(mut self, v: bool) -> Self {
-        self.inner.supress_line_numbers = v;
+        self.inner.suppress_line_numbers = v;
         self
     }
 
     pub fn borders(mut self, v: Option<ParagraphBorder>) -> Self {
-        self.inner.borders = v;
+        self.inner.paragraph_borders = v;
         self
     }
 
@@ -149,7 +153,7 @@ impl ParagraphPropertiesBuilder {
         self
     }
 
-    pub fn tabs(mut self, v: Option<ParagraphTab>) -> Self {
+    pub fn tabs(mut self, v: Option<Vec<ParagraphTab>>) -> Self {
         self.inner.tabs = v;
         self
     }

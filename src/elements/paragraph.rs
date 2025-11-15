@@ -8,6 +8,6 @@ pub enum ParagraphChild {
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Paragraph {
-    pub properties: Option<ParagraphProperties>,
+    pub properties: ParagraphProperties,
     pub children: Vec<ParagraphChild>,
 }
