@@ -32,6 +32,7 @@ type Result<T> = std::result::Result<T, RudocxStyleError>;
 ///
 /// Note: It's not in the scope right now to add direct support for `Cs` `TypeFont` properties such as szCs, bCs, etc. It is in the scope to add new functionalities
 /// such as capitalization, outline, emboss, etc. but it is not yet supported.
+// TODO: There is a lot of properties missing we need to implement.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct RunProperties {
     pub bold: bool,

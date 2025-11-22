@@ -1,13 +1,15 @@
 use crate::elements::*;
 use crate::errors::RudocxError;
-use quick_xml::events::attributes::Attributes;
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
+use quick_xml::events::attributes::Attributes;
 
 /// Struct to contain the current status of
 struct CurrentData {
     document: Document,
     paragraph: Option<Paragraph>,
+    paragraph_properties: Option<ParagraphProperties>,
+    in_paragraph_properties: bool,
     hyperlink: Option<Hyperlink>,
     run: Option<Run>,
     run_properties: Option<RunProperties>,
@@ -18,6 +20,8 @@ impl CurrentData {
         Self {
             document: Document::default(),
             paragraph: None,
+            paragraph_properties: None,
+            in_paragraph_properties: false,
             hyperlink: None,
             run: None,
             run_properties: None,
@@ -68,6 +72,8 @@ fn parse_ooxml(content: &str) -> Result<Document, RudocxError> {
     Ok(current_data.document)
 }
 
+/// Writes plain text not contained within explicit tags (i.e. plain text contained within a pair of
+/// open/close tags)
 fn handle_text(data: &mut CurrentData, text: String) -> Result<(), RudocxError> {
     if let Some(ref mut r) = data.run {
         r.text.push_str(&text);
@@ -75,6 +81,9 @@ fn handle_text(data: &mut CurrentData, text: String) -> Result<(), RudocxError> 
     Ok(())
 }
 
+/// Handles opening tags, and generates the children structures they may hold within in the
+/// temporary structure `CurrentData` to parse and create the necessary structures for the
+/// children the opened tag may contain. It will not perform a closure of the tag.
 fn handle_open_tag(
     tag: &[u8],
     data: &mut CurrentData,
@@ -96,7 +105,13 @@ fn handle_open_tag(
                 data.document.paragraphs.push(p);
             }
             //Put a default paragraph in the empty option
+            data.paragraph_properties = Some(ParagraphProperties::default());
             data.paragraph = Some(Paragraph::default());
+            Ok(())
+        }
+        //ParagraphProperties
+        b"w:pPr" => {
+            data.in_paragraph_properties = true;
             Ok(())
         }
         //Hyperlink
@@ -140,6 +155,8 @@ fn handle_open_tag(
     }
 }
 
+/// Handle all the tags which information is self-contained (i.e. the tag is a `<_:val _:attr="" />`)
+/// and have no children within it.
 fn handle_empty_tag(
     tag: &[u8],
     data: &mut CurrentData,
@@ -147,7 +164,9 @@ fn handle_empty_tag(
     reader: &Reader<&[u8]>,
 ) -> Result<(), RudocxError> {
     match tag {
-        //TODO: Error for !data.in_run_properties
+        //TODO: Error when !data.in_run_properties and similars
+
+        /* START OF RUN PROPERTIES */
         //Bold
         b"w:b" => {
             if data.in_run_properties {
@@ -400,10 +419,386 @@ fn handle_empty_tag(
             }
             Ok(())
         }
+        /* END OF RUN PROPERTIES */
+        /* START OF PARAGRAPH PROPERTIES */
+        //Keep next
+        b"w:keepNext" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    //TODO: !! Add this check to all boolean value based tags
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.keep_next = true,
+                            }
+                        }
+                    } else {
+                        p.keep_next = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Keep lines
+        b"w:keepLines" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.keep_lines = true,
+                            }
+                        }
+                    } else {
+                        p.keep_lines = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Page break before
+        b"w:pageBreakBefore" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.page_break_before = true,
+                            }
+                        }
+                    } else {
+                        p.page_break_before = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Window control
+        b"w:windowControl" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.window_control = true,
+                            }
+                        }
+                    } else {
+                        p.window_control = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Suppress line numbers
+        b"w:suppressLineNumbers" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.suppress_line_numbers = true,
+                            }
+                        }
+                    } else {
+                        p.suppress_line_numbers = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Suppress auto hyphen
+        b"w:suppressAutoHyphens" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.suppress_auto_hyphens = true,
+                            }
+                        }
+                    } else {
+                        p.suppress_auto_hyphens = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Word wrap
+        b"w:wordWrap" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.word_wrap = true,
+                            }
+                        }
+                    } else {
+                        p.word_wrap = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Topline Punct
+        b"w:toplinePunct" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.topline_punct = true,
+                            }
+                        }
+                    } else {
+                        p.topline_punct = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        // AutoSpaceDN
+        b"w:autoSpaceDE" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.autospace_de = true,
+                            }
+                        }
+                    } else {
+                        p.autospace_de = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        // AutoSpaceDN
+        b"w:autoSpaceDN" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.autospace_dn = true,
+                            }
+                        }
+                    } else {
+                        p.autospace_dn = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Bidi
+        b"w:bidi" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.bidi = true,
+                            }
+                        }
+                    } else {
+                        p.bidi = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Snap to grid
+        b"w:snapToGrid" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.snap_to_grid = true,
+                            }
+                        }
+                    } else {
+                        p.snap_to_grid = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Contextual Spacing
+        b"w:contextualSpacing" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.contextual_spacing = true,
+                            }
+                        }
+                    } else {
+                        p.contextual_spacing = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        //Mirror indents
+        b"w:mirrorIndents" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.mirror_indents = true,
+                            }
+                        }
+                    } else {
+                        p.mirror_indents = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Suppress overlap
+        b"w:suppressOverlap" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            match v.as_ref() {
+                                "off" | "0" | "false" => (),
+                                _ => p.suppress_overlap = true,
+                            }
+                        }
+                    } else {
+                        p.suppress_overlap = true;
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Justification
+        b"w:jc" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            p.jc = Some(ParagraphJustification::new(
+                                ParagraphJustificationValues::from(v.as_ref()),
+                            ));
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Text direction (apparently can be textFlow as well, so we include it here)
+        b"w:textDirection" | b"w:textFlow" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            p.text_direction = Some(ParagraphTextDir::new(
+                                ParagraphTextDirValues::from(v.as_ref()),
+                            ));
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Text Alignment
+        b"w:textAlignment" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            p.text_alignment = Some(ParagraphTextAlign::new(
+                                ParagraphTextAlignValues::from(v.as_ref()),
+                            ));
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+        // TBox tight wrap
+        b"w:textboxTightWrap" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            p.textbox_tight_wrap = Some(ParagraphTBoxTightWrap::new(
+                                ParagraphTBoxTightWrapValues::from(v.as_ref()),
+                            ));
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+        // Outline level
+        b"w:outlineLvl" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            p.outline_level = Some(v.as_ref().parse::<u8>().unwrap_or(0));
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+        // First line
+        // First line chars
+        // Right
+        // Right chars
+        // Left
+        // Left chars
+        // Hanging
+        // Hanging chars
         _ => Ok(()),
     }
 }
 
+/// Handles closing a previously opened tag and performs the necessary operations to let the
+/// temporary structure `CurrentData` keep with its work and not generate conflicts or overwrites.
 fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxError> {
     match tag {
         //Text
@@ -471,6 +866,8 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
     }
 }
 
+/// Handle reaching the end of the file. This will correctly close all the structures and
+/// perform the last operations to generate a valid document.
 fn handle_eof(data: &mut CurrentData) -> Result<(), RudocxError> {
     if let Some(p) = data.paragraph.take() {
         if let Some(mut h) = data.hyperlink.take() {
