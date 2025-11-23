@@ -905,7 +905,14 @@ fn handle_empty_tag(
                                 pbs.color = Some(HexColor::new(v.as_ref()));
                             }
                         }
-                        p.top = Some(pbs);
+                        match tag {
+                            b"w:top" => p.top = Some(pbs),
+                            b"w:left" => p.left = Some(pbs),
+                            b"w:bottom" => p.bottom = Some(pbs),
+                            b"w:right" => p.right = Some(pbs),
+                            b"w:between" => p.between = Some(pbs),
+                            _ => (),
+                        }
                     }
                 }
             }
