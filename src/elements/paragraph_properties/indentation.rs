@@ -4,7 +4,7 @@ type Result<T> = std::result::Result<T, RudocxParagraphStyleError>;
 
 /// Contains left, right, first line, and hanging indentation values along with their
 /// corresponding additional indentation in hinthedths of character unit
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct ParagraphIndentation {
     pub left: Option<i32>,
     pub left_chars: Option<i32>,

@@ -3,25 +3,13 @@ use std::fmt;
 use crate::elements::HexColor;
 
 /// Contains top, bottom, left, right, between, and bar border definitions
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct ParagraphBorder {
     pub top: Option<ParagraphBorderSide>,
     pub bottom: Option<ParagraphBorderSide>,
     pub left: Option<ParagraphBorderSide>,
     pub right: Option<ParagraphBorderSide>,
     pub between: Option<ParagraphBorderSide>,
-}
-
-impl Default for ParagraphBorder {
-    fn default() -> Self {
-        Self {
-            top: Some(ParagraphBorderSide::default()),
-            bottom: Some(ParagraphBorderSide::default()),
-            left: Some(ParagraphBorderSide::default()),
-            right: Some(ParagraphBorderSide::default()),
-            between: None,
-        }
-    }
 }
 
 impl ParagraphBorder {
@@ -43,7 +31,7 @@ impl ParagraphBorder {
 }
 
 //TODO: Implement shadow, frame, and themed attributes
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct ParagraphBorderSide {
     pub val: ParagraphBorderStyle,
     pub sz: Option<u8>,
@@ -58,6 +46,12 @@ pub enum ParagraphBorderStyle {
     Dashed,
     Nil,
     // Note: None is defined by the None value of the Option containing this enum
+}
+
+impl Default for ParagraphBorderStyle {
+    fn default() -> Self {
+        Self::Nil
+    }
 }
 
 impl fmt::Display for ParagraphBorderStyle {
@@ -79,17 +73,6 @@ impl<T: Into<String>> From<T> for ParagraphBorderStyle {
             "dashed" => ParagraphBorderStyle::Dashed,
             "nil" => ParagraphBorderStyle::Nil,
             _ => ParagraphBorderStyle::Nil,
-        }
-    }
-}
-
-impl Default for ParagraphBorderSide {
-    fn default() -> Self {
-        Self {
-            val: ParagraphBorderStyle::Single,
-            sz: Some(4),
-            space: None,
-            color: Some(HexColor::new("FFFFFF")),
         }
     }
 }

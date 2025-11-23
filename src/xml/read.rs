@@ -95,6 +95,12 @@ fn handle_open_tag(
         b"w:t" => Ok(()),
         //RunProperties
         b"w:rPr" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut pp) = data.paragraph_properties {
+                    pp.default_run_properties = Some(RunProperties::default());
+                }
+                return Ok(());
+            }
             data.in_run_properties = true;
             Ok(())
         }
@@ -151,6 +157,13 @@ fn handle_open_tag(
             data.run = Some(Run::default());
             Ok(())
         }
+        // pBdr (pPr)
+        b"w:pBdr" => {
+            if let Some(ref mut pp) = data.paragraph_properties {
+                pp.paragraph_borders = Some(ParagraphBorder::default());
+            }
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
@@ -172,6 +185,14 @@ fn handle_empty_tag(
             if data.in_run_properties {
                 if let Some(ref mut p) = data.run_properties {
                     p.bold = true;
+                }
+            }
+            //TODO: Check logic for setting default run properties inside pPr
+            if data.in_paragraph_properties {
+                if let Some(ref mut pp) = data.paragraph_properties {
+                    if let Some(ref mut p) = pp.default_run_properties {
+                        p.bold = true;
+                    }
                 }
             }
             Ok(())
@@ -785,14 +806,111 @@ fn handle_empty_tag(
             }
             Ok(())
         }
-        // First line
-        // First line chars
-        // Right
-        // Right chars
-        // Left
-        // Left chars
-        // Hanging
-        // Hanging chars
+        // Ind
+        b"w:ind" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut p) = data.paragraph_properties {
+                    let mut pi = ParagraphIndentation::default();
+                    if let Some(Ok(a)) = attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:left")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.left = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:leftChars")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.left_chars = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:right")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.right = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:rightChars")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.left = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:hanging")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.hanging = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:hangingChars")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.hanging_chars = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:firstLine")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.first_line = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    if let Some(Ok(a)) =
+                        attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:firstLineChars")
+                    {
+                        if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                            pi.first_line_chars = Some(v.as_ref().parse::<i32>().unwrap_or(0));
+                        }
+                    }
+                    p.ind = Some(pi);
+                }
+            }
+            Ok(())
+        }
+        // Top | Left | Bottom | Right | Between (pBdr)
+        b"w:top" | b"w:left" | b"w:bottom" | b"w:right" | b"w:between" => {
+            if data.in_paragraph_properties {
+                if let Some(ref mut pp) = data.paragraph_properties {
+                    if let Some(ref mut p) = pp.paragraph_borders {
+                        let mut pbs = ParagraphBorderSide::default();
+                        if let Some(Ok(a)) =
+                            attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:val")
+                        {
+                            if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                                pbs.val = ParagraphBorderStyle::from(v.as_ref());
+                            }
+                        }
+                        if let Some(Ok(a)) =
+                            attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:sz")
+                        {
+                            if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                                pbs.sz = Some(v.as_ref().parse::<u8>().unwrap_or(0));
+                            }
+                        }
+                        if let Some(Ok(a)) =
+                            attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:space")
+                        {
+                            if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                                pbs.space = Some(v.as_ref().parse::<u8>().unwrap_or(0));
+                            }
+                        }
+                        if let Some(Ok(a)) =
+                            attr.find(|x| x.clone().unwrap().key.as_ref() == b"w:color")
+                        {
+                            if let Ok(v) = a.decode_and_unescape_value(reader.decoder()) {
+                                pbs.color = Some(HexColor::new(v.as_ref()));
+                            }
+                        }
+                        p.top = Some(pbs);
+                    }
+                }
+            }
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
@@ -805,6 +923,9 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
         b"w:t" => Ok(()),
         //Run Properties
         b"w:rPr" => {
+            if data.in_paragraph_properties {
+                return Ok(());
+            }
             data.in_run_properties = false;
             Ok(())
         }
@@ -862,6 +983,7 @@ fn handle_close_tag(tag: &[u8], data: &mut CurrentData) -> Result<(), RudocxErro
             data.run = None;
             Ok(())
         }
+        // Some tags doesn't need any closing logic: pBdr
         _ => Ok(()),
     }
 }
@@ -888,150 +1010,6 @@ fn handle_eof(data: &mut CurrentData) -> Result<(), RudocxError> {
         }
     }
     Ok(())
-}
-
-///This function server as a boilerplate parser and thus it is not completed.
-///It will not work with the majority of the elements that intervene in OOXML.
-#[deprecated]
-pub fn parse_document_xml(xml_content: &str) -> Result<Document, RudocxError> {
-    let mut reader = Reader::from_str(xml_content);
-    let mut buf = Vec::new();
-    let mut document = Document::default();
-    let mut current_paragraph: Option<Paragraph> = None;
-    let mut current_run: Option<Run> = None;
-    let mut current_run_properties: Option<RunProperties> = None;
-    let mut is_in_run_properties = false;
-
-    loop {
-        //Loop through all the events from an XML string
-        match reader.read_event_into(&mut buf) {
-            //If it's a tag opening. With or without attributes.
-            Ok(Event::Start(ref e)) => match e.name().as_ref() {
-                //Paragraphs
-                b"w:p" => {
-                    if let Some(p) = current_paragraph.take() {
-                        document.paragraphs.push(p);
-                    }
-                    current_paragraph = Some(Paragraph::default());
-                }
-                //Runs
-                b"w:r" => {
-                    if let Some(r) = current_run.take() {
-                        if let Some(ref mut p) = current_paragraph {
-                            p.children.push(ParagraphChild::Run(r))
-                        }
-                    }
-                    current_run_properties = Some(RunProperties::default());
-                    current_run = Some(Run {
-                        properties: RunProperties::default(),
-                        text: String::new(),
-                        space_preserve: false,
-                    });
-                }
-                //RunProperties
-                b"w:rPr" => {
-                    is_in_run_properties = true;
-                }
-                //Text
-                b"w:t" => {}
-                //Skip
-                _ => (),
-            },
-            //If it's a self closed tag. With or without attributes
-            Ok(Event::Empty(ref e)) => match e.name().as_ref() {
-                //Bold
-                b"w:b" => {
-                    if is_in_run_properties {
-                        if let Some(ref mut props) = current_run_properties {
-                            props.bold = true;
-                        }
-                    }
-                }
-                //Color
-                b"w:color" => {
-                    if is_in_run_properties {
-                        if let Some(ref mut props) = current_run_properties {
-                            for attr_result in e.attributes() {
-                                if let Ok(attr) = attr_result {
-                                    if attr.key.as_ref() == b"w:val" {
-                                        if let Ok(val) =
-                                            attr.decode_and_unescape_value(reader.decoder())
-                                        {
-                                            props.color = Some(HexColor::new(val.as_ref()));
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                //Skip
-                _ => (),
-            },
-            //Plain text contained between two tags
-            Ok(Event::Text(e)) => {
-                if let Some(ref mut run) = current_run {
-                    run.text.push_str(&e.unescape()?.to_string());
-                }
-            }
-            //End of a tag. Without attributes
-            Ok(Event::End(ref e)) => match e.name().as_ref() {
-                //Paragraph
-                b"w:p" => {
-                    if let Some(p) = current_paragraph.take() {
-                        if let Some(r) = current_run.take() {
-                            if let Some(mut current_p) = Some(p) {
-                                current_p.children.push(ParagraphChild::Run(r));
-                                document.paragraphs.push(current_p);
-                            }
-                        } else {
-                            document.paragraphs.push(p);
-                        }
-                    }
-                    current_paragraph = None;
-                }
-                //Run
-                b"w:r" => {
-                    if let Some(mut run) = current_run.take() {
-                        if let Some(props) = current_run_properties.take() {
-                            run.properties = props;
-                        }
-                        if let Some(ref mut p) = current_paragraph {
-                            p.children.push(ParagraphChild::Run(run));
-                        }
-                    }
-                    current_run = None;
-                    current_run_properties = None;
-                }
-                //RunProperties
-                b"w:rPr" => {
-                    is_in_run_properties = false;
-                }
-                //Skip
-                _ => (),
-            },
-            //Detect End of File, push and set remaining dangling data and break the loop
-            Ok(Event::Eof) => {
-                if let Some(p) = current_paragraph.take() {
-                    if let Some(r) = current_run.take() {
-                        if let Some(mut current_p) = Some(p) {
-                            current_p.children.push(ParagraphChild::Run(r));
-                            document.paragraphs.push(current_p);
-                        }
-                    } else {
-                        document.paragraphs.push(p);
-                    }
-                }
-                break;
-            }
-            Err(e) => return Err(RudocxError::XmlError(e)),
-            _ => (),
-        }
-        buf.clear();
-    }
-
-    Ok(document)
 }
 
 #[cfg(test)]
